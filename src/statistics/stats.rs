@@ -13,17 +13,17 @@ impl Stats {
         }
     }
 
-    pub fn add_statistic(&mut self, data_point: DataPoint) {
+    pub fn add_statistic(&mut self, data_point: DataPoint, label: String) {
         let mut found = false;
         for series in self.all_series.iter_mut() {
-            if series.statistic_label == data_point.statistic_label {
+            if series.statistic_label == label {
                 series.add_data_point(&data_point);
                 found = true;
                 break;
             }
         }
         if !found {
-            let mut new_series = TimeSeries::new(data_point.statistic_label.clone());
+            let mut new_series = TimeSeries::new(label);
             new_series.add_data_point(&data_point);
             self.all_series.push(new_series);
         }
@@ -39,11 +39,10 @@ fn create_new_stats() {
 #[test]
 fn create_add_new_statistic() {
     let mut stats = Stats::new();
-    let data_point = DataPoint::new(0, "test".to_string(), 1.0);
+    let data_point = DataPoint::new(0, 1.0);
     assert_eq!(stats.all_series.len(), 0);
-    stats.add_statistic(data_point);
+    stats.add_statistic(data_point, "test".to_string());
     assert_eq!(stats.all_series.len(), 1);
-    assert_eq!(stats.all_series[0].statistic_label, "test");
     assert_eq!(stats.all_series[0].series.len(), 1);
     assert_eq!(stats.all_series[0].series, BTreeMap::from([(0, 1.0)]));
 }
