@@ -4,12 +4,20 @@ mod statistics {
     mod timeseries;
 }
 
-mod environment {
-    mod bus_world;
-    mod environment;
+pub mod environment {
+    pub mod bus_world;
+    pub mod environment;
 }
 
 mod event {
     pub mod bus_event;
     pub mod event;
+}
+
+mod des {
+    pub mod des;
+}
+
+pub mod simulation {
+    pub mod sim;
 }
