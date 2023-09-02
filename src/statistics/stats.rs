@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use super::{data_point::DataPoint, timeseries::TimeSeries};
 
 pub struct Stats {
@@ -30,19 +28,25 @@ impl Stats {
     }
 }
 
-#[test]
-fn create_new_stats() {
-    let stats = Stats::new();
-    assert_eq!(stats.all_series.len(), 0);
-}
+#[cfg(test)]
+mod tests {
+    use super::{DataPoint, Stats};
+    use std::collections::BTreeMap;
 
-#[test]
-fn create_add_new_statistic() {
-    let mut stats = Stats::new();
-    let data_point = DataPoint::new(0, 1.0);
-    assert_eq!(stats.all_series.len(), 0);
-    stats.add_statistic(data_point, "test".to_string());
-    assert_eq!(stats.all_series.len(), 1);
-    assert_eq!(stats.all_series[0].series.len(), 1);
-    assert_eq!(stats.all_series[0].series, BTreeMap::from([(0, 1.0)]));
+    #[test]
+    fn create_new_stats() {
+        let stats = Stats::new();
+        assert_eq!(stats.all_series.len(), 0);
+    }
+
+    #[test]
+    fn create_add_new_statistic() {
+        let mut stats = Stats::new();
+        let data_point = DataPoint::new(0, 1.0);
+        assert_eq!(stats.all_series.len(), 0);
+        stats.add_statistic(data_point, "test".to_string());
+        assert_eq!(stats.all_series.len(), 1);
+        assert_eq!(stats.all_series[0].series.len(), 1);
+        assert_eq!(stats.all_series[0].series, BTreeMap::from([(0, 1.0)]));
+    }
 }
