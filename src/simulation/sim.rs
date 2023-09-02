@@ -35,7 +35,7 @@ impl Simulation {
 mod test {
 
     use crate::environment::bus_world::bus_environment::BusEnvironment;
-    use crate::event::new_bus::NewBusEvent;
+    use crate::environment::bus_world::bus_world_events::new_bus::NewBusEvent;
     use crate::simulation::sim::Simulation;
 
     #[test]

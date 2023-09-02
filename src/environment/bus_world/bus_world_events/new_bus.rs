@@ -1,5 +1,4 @@
-use super::super::environment::bus_world::bus::Bus;
-use super::event::Event;
+use crate::event::event::Event;
 
 pub struct NewBusEvent {
     uid: usize,
@@ -37,7 +36,8 @@ impl Event for NewBusEvent {
 
 #[cfg(test)]
 mod tests {
-    use crate::event::{event::Event, new_bus::NewBusEvent};
+    use crate::environment::bus_world::bus_world_events::new_bus::NewBusEvent;
+    use crate::event::event::Event;
 
     #[test]
     fn create_bus_event() {

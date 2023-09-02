@@ -6,7 +6,6 @@ mod statistics {
 
 pub mod event {
     pub mod event;
-    pub mod new_bus;
 }
 
 mod des {
@@ -23,6 +22,9 @@ pub mod environment {
         pub mod bus_environment;
         pub mod bus_stop;
         pub mod passenger;
+        pub mod bus_world_events {
+            pub mod new_bus;
+        }
     }
     pub mod environment;
 }

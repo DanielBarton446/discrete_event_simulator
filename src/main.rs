@@ -1,6 +1,6 @@
 use discrete_event_simulator::{
-    environment::bus_world::bus_environment::BusEnvironment, event::new_bus::NewBusEvent,
-    simulation::sim::Simulation,
+    environment::bus_world::bus_environment::BusEnvironment,
+    environment::bus_world::bus_world_events::new_bus::NewBusEvent, simulation::sim::Simulation,
 };
 
 fn main() {

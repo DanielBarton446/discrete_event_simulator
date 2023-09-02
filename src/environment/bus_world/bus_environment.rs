@@ -1,11 +1,11 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
+use super::bus_world_events::new_bus::NewBusEvent;
 use crate::des::des::Scheduler;
 use crate::environment::bus_world::bus::Bus;
 use crate::environment::environment::Environment;
 use crate::event::event::Event;
-use crate::event::new_bus::NewBusEvent;
 
 enum BusEventTypes {
     NewBus,
@@ -78,7 +78,10 @@ impl Display for BusEnvironment {
 mod tests {
     use super::BusEnvironment;
     use crate::des::des::Scheduler;
-    use crate::{environment::environment::Environment, event::new_bus::NewBusEvent};
+    use crate::{
+        environment::bus_world::bus_world_events::new_bus::NewBusEvent,
+        environment::environment::Environment,
+    };
 
     #[test]
     fn create_bus_world() {
