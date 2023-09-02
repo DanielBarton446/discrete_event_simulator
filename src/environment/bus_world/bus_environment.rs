@@ -2,6 +2,7 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 use crate::des::des::Scheduler;
+use crate::environment::bus_world::bus::Bus;
 use crate::environment::environment::Environment;
 use crate::event::event::Event;
 use crate::event::new_bus::NewBusEvent;
@@ -21,17 +22,17 @@ impl FromStr for BusEventTypes {
     }
 }
 
-pub struct BusWorld {
-    number_of_buses: usize,
+pub struct BusEnvironment {
+    buses: Vec<Bus>,
 }
 
-impl BusWorld {
-    pub fn new() -> BusWorld {
-        BusWorld { number_of_buses: 0 }
+impl BusEnvironment {
+    pub fn new() -> BusEnvironment {
+        BusEnvironment { buses: Vec::new() }
     }
 }
 
-impl Environment for BusWorld {
+impl Environment for BusEnvironment {
     fn apply_event(&mut self, scheduler: &mut Scheduler, event: Box<dyn Event>) {
         match BusEventTypes::from_str(event.get_event_type()) {
             Ok(BusEventTypes::NewBus) => {
@@ -43,15 +44,16 @@ impl Environment for BusWorld {
         }
     }
     fn get_state(&self) -> String {
-        format!("Number of buses: {}", self.number_of_buses)
+        format!("Number of buses: {}", self.buses.len())
     }
 }
 
-impl BusWorld {
+impl BusEnvironment {
     fn apply_new_bus_event(&mut self, scheduler: &mut Scheduler, event: Box<dyn Event>) {
         println!("New Bus! (temporary representation of bus event)");
         println!("Bus event with UID: {}", event.get_uid());
-        self.number_of_buses += 1;
+        // this is a bad way to make a UID for buses, but this is what we are going to do for now
+        self.buses.push(Bus::new(event.get_uid()));
 
         let dummy_event = Box::new(NewBusEvent::new(
             event.get_uid() + 1,
@@ -63,10 +65,10 @@ impl BusWorld {
     }
 }
 
-impl Display for BusWorld {
+impl Display for BusEnvironment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for i in 0..self.number_of_buses {
-            write!(f, "Bus {}", i)?;
+        for bus in &self.buses {
+            writeln!(f, "{}", bus)?;
         }
         Ok(())
     }
@@ -74,21 +76,21 @@ impl Display for BusWorld {
 
 #[cfg(test)]
 mod tests {
-    use super::BusWorld;
+    use super::BusEnvironment;
     use crate::des::des::Scheduler;
     use crate::{environment::environment::Environment, event::new_bus::NewBusEvent};
 
     #[test]
     fn create_bus_world() {
-        let mut bus_world = BusWorld::new();
+        let mut bus_world = BusEnvironment::new();
         let mut scheduler = Scheduler::new(100.0);
-        assert_eq!(bus_world.number_of_buses, 0);
+        assert_eq!(bus_world.buses.len(), 0);
         let event = Box::new(NewBusEvent::new(
             1,
             0.0,
             String::from("create_bus_world_event"),
         ));
         bus_world.apply_event(&mut scheduler, event);
-        assert_eq!(bus_world.number_of_buses, 1);
+        assert_eq!(bus_world.buses.len(), 1);
     }
 }
