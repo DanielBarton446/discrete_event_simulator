@@ -11,9 +11,12 @@ pub trait Event {
 
 impl Ord for dyn Event {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.get_time_stamp()
-            .partial_cmp(&other.get_time_stamp())
-            .unwrap()
+        let timestamp_ordering = self.get_time_stamp().partial_cmp(&other.get_time_stamp());
+
+        match timestamp_ordering {
+            Some(ordering) => ordering.reverse(),
+            None => Ordering::Equal, // Handle the case where comparison fails
+        }
     }
 }
 
