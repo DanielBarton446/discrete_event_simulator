@@ -23,6 +23,7 @@ pub mod environment {
         pub mod bus_stop;
         pub mod passenger;
         pub mod bus_world_events {
+            pub mod move_bus_to_stop;
             pub mod new_bus;
         }
     }
