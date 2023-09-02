@@ -1,17 +1,12 @@
 mod statistics {
     mod data_point;
-    mod stats;
+    pub mod stats;
     mod timeseries;
 }
 
-pub mod environment {
-    pub mod bus_world;
-    pub mod environment;
-}
-
 mod event {
-    pub mod bus_event;
     pub mod event;
+    pub mod new_bus;
 }
 
 mod des {
@@ -20,4 +15,9 @@ mod des {
 
 pub mod simulation {
     pub mod sim;
+}
+
+pub mod environment {
+    pub mod bus_world;
+    pub mod environment;
 }

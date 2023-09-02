@@ -34,12 +34,12 @@ impl Simulation {
 mod test {
 
     use crate::environment::bus_world::BusWorld;
-    use crate::event::bus_event::BusEvent;
+    use crate::event::new_bus::NewBusEvent;
     use crate::simulation::sim::Simulation;
 
     #[test]
     fn simulation_run() {
-        let initial_event = Box::new(BusEvent::new(1, 0.0, String::from("initial_bus_event")));
+        let initial_event = Box::new(NewBusEvent::new(1, 0.0, String::from("initial_bus_event")));
         let env = BusWorld::new();
         let mut simulation = Simulation::new(10.0, Box::new(env), initial_event);
         simulation.run();
