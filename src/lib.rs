@@ -4,7 +4,7 @@ mod statistics {
     mod timeseries;
 }
 
-mod event {
+pub mod event {
     pub mod event;
     pub mod new_bus;
 }
@@ -18,6 +18,11 @@ pub mod simulation {
 }
 
 pub mod environment {
-    pub mod bus_world;
+    pub mod bus_world {
+        pub mod bus;
+        pub mod bus_environment;
+        pub mod bus_stop;
+        pub mod passenger;
+    }
     pub mod environment;
 }

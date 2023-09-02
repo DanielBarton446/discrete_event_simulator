@@ -1,3 +1,4 @@
+use super::super::environment::bus_world::bus::Bus;
 use super::event::Event;
 
 pub struct NewBusEvent {
