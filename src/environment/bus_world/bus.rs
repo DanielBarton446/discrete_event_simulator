@@ -29,6 +29,12 @@ impl Bus {
 
 impl Display for Bus {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
-        write!(f, "Bus {}", self.uid)
+        let passenger_display = self
+            .passengers
+            .iter()
+            .map(|p| p.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+        write!(f, "Bus {}: Passengers: {}", self.uid, passenger_display)
     }
 }

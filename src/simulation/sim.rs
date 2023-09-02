@@ -1,3 +1,9 @@
+use std::io::Write;
+use std::time::Duration;
+use std::{io, thread};
+
+use crossterm::{cursor, execute, terminal};
+
 use crate::des::des::Scheduler;
 use crate::environment::environment::Environment;
 use crate::event::event::Event;
@@ -22,11 +28,25 @@ impl Simulation {
     }
 
     pub fn run(&mut self) {
-        println!("Simulation::run()");
-
         while let Some(event) = self.scheduler.next_event() {
             self.environment.apply_event(&mut self.scheduler, event);
-            println!("{}", self.environment);
+        }
+    }
+
+    pub fn play_movie(&mut self, delay_millis: u64) {
+        while let Some(event) = self.scheduler.next_event() {
+            self.environment.apply_event(&mut self.scheduler, event);
+            // Clear screen for animation
+            let _ = execute!(io::stdout(), terminal::Clear(terminal::ClearType::All));
+            // hide cursor
+            let _ = execute!(io::stdout(), cursor::Hide);
+
+            println!("Current Time: {}", self.scheduler.current_time);
+            print!("\r{}", self.environment);
+
+            io::stdout().flush().unwrap();
+
+            thread::sleep(Duration::from_millis(delay_millis));
         }
     }
 }

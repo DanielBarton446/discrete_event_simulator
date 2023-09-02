@@ -12,5 +12,5 @@ fn main() {
         String::from("create the first bus!"),
     ));
     let mut sim = Simulation::new(10.0, Box::new(env), init_event);
-    sim.run();
+    sim.play_movie(300);
 }
