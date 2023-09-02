@@ -49,21 +49,31 @@ impl Simulation {
             thread::sleep(Duration::from_millis(delay_millis));
         }
     }
+
+    pub fn add_arbitrary_event(&mut self, from: Box<dyn Event>) {
+        self.scheduler.add_event(from);
+    }
 }
 
 #[cfg(test)]
 mod test {
 
     use crate::environment::bus_world::bus_environment::BusEnvironment;
-    use crate::environment::bus_world::bus_world_events::new_bus::NewBusEvent;
+    use crate::environment::bus_world::bus_world_events::new_bus::{NewBusEvent, NewBusesJson};
     use crate::simulation::sim::Simulation;
 
     #[test]
     fn simulation_run() {
-        let initial_event = Box::new(NewBusEvent::new(1, 0.0, String::from("initial_bus_event")));
-        let env = BusEnvironment::new();
+        let number_of_buses = NewBusesJson::new(10);
+        let initial_event = Box::new(NewBusEvent::new(
+            1,
+            0.0,
+            serde_json::to_string(&number_of_buses).unwrap(),
+        ));
+        let mut env = BusEnvironment::new();
+        env.create_bus_stops(1);
         let mut simulation = Simulation::new(10.0, Box::new(env), initial_event);
         simulation.run();
-        assert_eq!(simulation.environment.get_state(), "Number of buses: 11");
+        assert_eq!(simulation.environment.get_state(), "Number of buses: 10");
     }
 }
