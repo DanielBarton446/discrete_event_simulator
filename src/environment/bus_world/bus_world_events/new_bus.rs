@@ -1,4 +1,16 @@
+use serde::{Deserialize, Serialize};
+
 use crate::event::event::Event;
+
+#[derive(Deserialize, Serialize)]
+pub struct NewBusesJson {
+    pub number_of_buses: usize,
+}
+impl NewBusesJson {
+    pub fn new(number_of_buses: usize) -> Self {
+        Self { number_of_buses }
+    }
+}
 
 pub struct NewBusEvent {
     uid: usize,
