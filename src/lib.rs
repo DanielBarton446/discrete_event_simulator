@@ -1,5 +1,5 @@
 mod statistics {
-    mod data_point;
+    pub mod data_point;
     pub mod stats;
     mod timeseries;
 }

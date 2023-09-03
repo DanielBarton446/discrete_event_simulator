@@ -7,10 +7,12 @@ use crossterm::{cursor, execute, terminal};
 use crate::des::des::Scheduler;
 use crate::environment::environment::Environment;
 use crate::event::event::Event;
+use crate::statistics::stats::Stats;
 
 pub struct Simulation {
     scheduler: Scheduler,
     pub environment: Box<dyn Environment>,
+    pub statistics: Stats,
 }
 
 impl Simulation {
@@ -22,6 +24,7 @@ impl Simulation {
         let mut sim = Simulation {
             scheduler: Scheduler::new(runtime),
             environment,
+            statistics: Stats::new(),
         };
         sim.scheduler.add_event(initial_event);
         return sim;
@@ -29,7 +32,8 @@ impl Simulation {
 
     pub fn run(&mut self) {
         while let Some(event) = self.scheduler.next_event() {
-            self.environment.apply_event(&mut self.scheduler, event);
+            self.environment
+                .apply_event(&mut self.scheduler, &mut self.statistics, event);
         }
     }
 
@@ -45,11 +49,16 @@ impl Simulation {
             print!("\r{}", self.environment);
 
             // apply the event
-            self.environment.apply_event(&mut self.scheduler, event);
+            self.environment
+                .apply_event(&mut self.scheduler, &mut self.statistics, event);
 
             io::stdout().flush().unwrap();
 
             thread::sleep(Duration::from_millis(delay_millis));
+        }
+        // Display statistics:
+        for series in &self.statistics.all_series {
+            println!("{}", series);
         }
     }
 
