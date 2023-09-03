@@ -10,6 +10,7 @@ use crate::environment::environment::Environment;
 use crate::event::event::Event;
 
 use super::bus_world_events::move_bus_to_stop::BusToStopMappingJson;
+use super::passenger::Passenger;
 
 enum BusEventTypes {
     NewBus,
@@ -45,6 +46,27 @@ impl BusEnvironment {
             Ok(())
         } else {
             Err("No bus stops exist".to_string())
+        }
+    }
+
+    pub fn initialize_bus_stops_with_passengers(&mut self, count: usize) {
+        if self.bus_stops.is_empty() {
+            panic!("Error: No bus stops exist");
+        }
+        let mut bus_stop_names: Vec<String> = Vec::new();
+        for stop in self.bus_stops.iter() {
+            bus_stop_names.push(stop.name.clone());
+        }
+        for i in 0..count {
+            let passenger = Passenger::new_random_passenger(i, &bus_stop_names);
+            // this could be much better, but lets deal with efficiencies later
+            if let Some(initial_stop) = self
+                .bus_stops
+                .iter_mut()
+                .find(|stop| stop.name == passenger.source)
+            {
+                initial_stop.add_passenger(passenger);
+            }
         }
     }
 
