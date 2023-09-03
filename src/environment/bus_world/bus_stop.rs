@@ -1,10 +1,13 @@
-use std::fmt::{Display, Error, Formatter};
+use std::{
+    collections::HashMap,
+    fmt::{Display, Error, Formatter},
+};
 
 use super::{bus::Bus, passenger::Passenger};
 
 pub struct BusStop {
     pub name: String,
-    pub waiting_passengers: Vec<Passenger>,
+    pub waiting_passengers: HashMap<String, Vec<Passenger>>,
     pub completed_passengers: Vec<Passenger>,
     pub buses_at_stop: Vec<Bus>,
 }
@@ -13,14 +16,17 @@ impl BusStop {
     pub fn new(name: String) -> BusStop {
         BusStop {
             name,
-            waiting_passengers: Vec::new(),
+            waiting_passengers: HashMap::new(),
             completed_passengers: Vec::new(),
             buses_at_stop: Vec::new(),
         }
     }
 
     pub fn add_passenger(&mut self, passenger: Passenger) {
-        self.waiting_passengers.push(passenger);
+        self.waiting_passengers
+            .entry(passenger.destination.clone())
+            .or_insert_with(Vec::new)
+            .push(passenger);
     }
 
     pub fn add_bus(&mut self, bus: Bus) {
@@ -45,11 +51,16 @@ impl Display for BusStop {
             .map(|b| b.to_string())
             .collect::<Vec<String>>()
             .join(" ");
+        let total_waiting = self
+            .waiting_passengers
+            .values()
+            .map(|v| v.len())
+            .sum::<usize>();
         write!(
             f,
             "[{}] ({}|{}) \t{}",
             self.name,
-            self.waiting_passengers.len(),
+            total_waiting,
             self.completed_passengers.len(),
             display_buses
         )
