@@ -64,7 +64,7 @@ mod test {
 
     #[test]
     fn simulation_run() {
-        let number_of_buses = NewBusesJson::new(10);
+        let number_of_buses = NewBusesJson::new(10, 15);
         let initial_event = Box::new(NewBusEvent::new(
             1,
             0.0,
