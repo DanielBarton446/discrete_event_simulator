@@ -6,7 +6,7 @@ use crate::event::event::Event;
 
 pub struct UnloadPassengersEvent {
     uid: usize,
-    timestamp: f64,
+    timestamp: usize,
     data: String,
 }
 
@@ -22,7 +22,7 @@ impl UnloadPassengersJson {
 }
 
 impl UnloadPassengersEvent {
-    pub fn new(uid: usize, timestamp: f64, data: String) -> UnloadPassengersEvent {
+    pub fn new(uid: usize, timestamp: usize, data: String) -> UnloadPassengersEvent {
         UnloadPassengersEvent {
             uid,
             timestamp,
@@ -40,7 +40,7 @@ impl Event for UnloadPassengersEvent {
         self.uid
     }
 
-    fn get_time_stamp(&self) -> f64 {
+    fn get_time_stamp(&self) -> usize {
         self.timestamp
     }
 

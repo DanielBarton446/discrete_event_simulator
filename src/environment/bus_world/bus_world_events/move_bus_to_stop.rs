@@ -17,12 +17,12 @@ impl BusToStopMappingJson {
 
 pub struct MoveBusToStopEvent {
     uid: usize,
-    timestamp: f64,
+    timestamp: usize,
     data: String,
 }
 
 impl MoveBusToStopEvent {
-    pub fn new(uid: usize, timestamp: f64, data: String) -> MoveBusToStopEvent {
+    pub fn new(uid: usize, timestamp: usize, data: String) -> MoveBusToStopEvent {
         MoveBusToStopEvent {
             uid,
             timestamp,
@@ -40,7 +40,7 @@ impl Event for MoveBusToStopEvent {
         self.uid
     }
 
-    fn get_time_stamp(&self) -> f64 {
+    fn get_time_stamp(&self) -> usize {
         self.timestamp
     }
 

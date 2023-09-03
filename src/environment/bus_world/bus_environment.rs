@@ -166,7 +166,7 @@ impl BusEnvironment {
             // Load initial bus passengers at first stop
             let schedule_load_passengers = Box::new(LoadPassengersEvent::new(
                 event.get_uid() + 1,
-                event.get_time_stamp() + 1.0,
+                event.get_time_stamp() + 1,
                 serde_json::to_string(&LoadPassengersJson::new(bus.uid)).unwrap(),
             ));
             scheduler.add_event(schedule_load_passengers);
@@ -177,7 +177,7 @@ impl BusEnvironment {
             // Schedule the bus to move to the next stop
             let start_bus_route = Box::new(MoveBusToStopEvent::new(
                 event.get_uid() + 1,
-                event.get_time_stamp() + 5.0, // This should be something long for moving between stops
+                event.get_time_stamp() + 5, // This should be something long for moving between stops
                 serde_json::to_string(&bus_routing).unwrap(),
             ));
 
@@ -209,7 +209,7 @@ impl BusEnvironment {
         // Need to scheudle bus loading passengers at this stop
         let schedule_load_passengers = Box::new(LoadPassengersEvent::new(
             event.get_uid() + 1,
-            event.get_time_stamp() + 1.0,
+            event.get_time_stamp() + 1,
             serde_json::to_string(&LoadPassengersJson::new(bus.uid)).unwrap(),
         ));
         scheduler.add_event(schedule_load_passengers);
@@ -219,7 +219,7 @@ impl BusEnvironment {
             let mapping = BusToStopMappingJson::new(bus.uid, next_stop.to_string());
             let next_event = Box::new(MoveBusToStopEvent::new(
                 event.get_uid() + 1, // this is really bad....
-                event.get_time_stamp() + 5.0,
+                event.get_time_stamp() + 5,
                 serde_json::to_string(&mapping).unwrap(),
             ));
             scheduler.add_event(next_event);
@@ -299,13 +299,13 @@ mod tests {
     #[test]
     fn create_bus_world() {
         let mut bus_world = BusEnvironment::new();
-        let mut scheduler = Scheduler::new(100.0);
+        let mut scheduler = Scheduler::new(100);
         assert_eq!(bus_world.bus_stops.len(), 0);
         bus_world.create_bus_stops(1);
         let number_of_buses = NewBusesJson::new(1, 5);
         let event = Box::new(NewBusEvent::new(
             1,
-            0.0,
+            0,
             serde_json::to_string(&number_of_buses).unwrap(),
         ));
         bus_world.apply_event(&mut scheduler, event);

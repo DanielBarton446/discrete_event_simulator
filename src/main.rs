@@ -10,13 +10,13 @@ fn main() {
     let buses = NewBusesJson::new(5, 19);
     let init_event = Box::new(NewBusEvent::new(
         0,
-        0.0,
+        0,
         serde_json::to_string(&buses).unwrap(),
     ));
 
     env.create_bus_stops(5);
     env.initialize_bus_stops_with_passengers(100);
 
-    let mut sim = Simulation::new(100.0, Box::new(env), init_event);
+    let mut sim = Simulation::new(100, Box::new(env), init_event);
     sim.play_movie(300);
 }
