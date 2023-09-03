@@ -1,3 +1,5 @@
+use std::fmt::{Display, Error, Formatter};
+
 use serde::{Deserialize, Serialize};
 
 use crate::event::event::Event;
@@ -47,6 +49,16 @@ impl Event for NewBusEvent {
 
     fn get_data(&self) -> Result<String, serde_json::Error> {
         Ok(self.data.clone())
+    }
+}
+
+impl Display for NewBusEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        write!(
+            f,
+            "NewBusEvent: uid: {} for bus uid: {}",
+            self.uid, self.data,
+        )
     }
 }
 

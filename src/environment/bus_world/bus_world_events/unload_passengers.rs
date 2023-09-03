@@ -4,26 +4,26 @@ use serde::{Deserialize, Serialize};
 
 use crate::event::event::Event;
 
-pub struct LoadPassengersEvent {
+pub struct UnloadPassengersEvent {
     uid: usize,
     timestamp: f64,
     data: String,
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct LoadPassengersJson {
+pub struct UnloadPassengersJson {
     pub bus_uid: usize, // what else?
 }
 
-impl LoadPassengersJson {
+impl UnloadPassengersJson {
     pub fn new(bus_uid: usize) -> Self {
         Self { bus_uid }
     }
 }
 
-impl LoadPassengersEvent {
-    pub fn new(uid: usize, timestamp: f64, data: String) -> LoadPassengersEvent {
-        LoadPassengersEvent {
+impl UnloadPassengersEvent {
+    pub fn new(uid: usize, timestamp: f64, data: String) -> UnloadPassengersEvent {
+        UnloadPassengersEvent {
             uid,
             timestamp,
             data,
@@ -31,9 +31,9 @@ impl LoadPassengersEvent {
     }
 }
 
-impl Event for LoadPassengersEvent {
+impl Event for UnloadPassengersEvent {
     fn get_event_type(&self) -> &str {
-        "LoadPassengers"
+        "UnloadPassengers"
     }
 
     fn get_uid(&self) -> usize {
@@ -49,11 +49,11 @@ impl Event for LoadPassengersEvent {
     }
 }
 
-impl Display for LoadPassengersEvent {
+impl Display for UnloadPassengersEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         write!(
             f,
-            "LoadPassengersEvent: uid: {} for bus uid: {}",
+            "UnloadPassengersEvent: uid: {} for bus uid: {}",
             self.uid, self.data,
         )
     }

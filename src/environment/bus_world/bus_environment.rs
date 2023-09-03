@@ -1,23 +1,23 @@
-use std::fmt::{format, Display, Error, Formatter};
+use std::fmt::{Display, Error, Formatter};
 use std::str::FromStr;
 
 use crate::des::des::Scheduler;
 use crate::environment::bus_world::bus::Bus;
 use crate::environment::bus_world::bus_stop::BusStop;
 use crate::environment::bus_world::bus_world_events::new_bus::NewBusesJson;
-use crate::environment::bus_world::bus_world_events::{
-    load_passengers::*, move_bus_to_stop::*, new_bus::NewBusEvent,
-};
+use crate::environment::bus_world::bus_world_events::{load_passengers::*, move_bus_to_stop::*};
 use crate::environment::environment::Environment;
 use crate::event::event::Event;
 
 use super::bus_world_events::move_bus_to_stop::BusToStopMappingJson;
+use super::bus_world_events::unload_passengers::{UnloadPassengersEvent, UnloadPassengersJson};
 use super::passenger::Passenger;
 
 enum BusEventTypes {
     NewBus,
     MoveBusToStop,
     LoadPassengers,
+    UnloadPassengers,
 }
 
 impl FromStr for BusEventTypes {
@@ -28,6 +28,7 @@ impl FromStr for BusEventTypes {
             "NewBus" => Ok(BusEventTypes::NewBus),
             "MoveBusToStop" => Ok(BusEventTypes::MoveBusToStop),
             "LoadPassengers" => Ok(BusEventTypes::LoadPassengers),
+            "UnloadPassengers" => Ok(BusEventTypes::UnloadPassengers),
             _ => Err(()),
         }
     }
@@ -126,6 +127,9 @@ impl Environment for BusEnvironment {
             Ok(BusEventTypes::LoadPassengers) => {
                 self.apply_load_passengers_event(scheduler, event);
             }
+            Ok(BusEventTypes::UnloadPassengers) => {
+                self.apply_unload_passengers_event(scheduler, event);
+            }
             Err(()) => {
                 panic!("Error: Unknown event type {}", event.get_event_type())
             }
@@ -142,9 +146,6 @@ impl Environment for BusEnvironment {
 
 impl BusEnvironment {
     fn apply_new_bus_event(&mut self, scheduler: &mut Scheduler, event: Box<dyn Event>) {
-        println!("New Bus! (temporary representation of bus event)");
-        println!("Bus event with UID: {}", event.get_uid());
-
         let bus_mapping = serde_json::from_str::<NewBusesJson>(&event.get_data().unwrap())
             .expect("Error: Could not deserialize bus mapping");
 
@@ -186,18 +187,24 @@ impl BusEnvironment {
 
     fn apply_move_bus_to_stop_event(&mut self, scheduler: &mut Scheduler, event: Box<dyn Event>) {
         // // This should be handled and not unwrapped, but whatever
-        let mapping =
+        let bus_and_new_stop =
             serde_json::from_str::<BusToStopMappingJson>(&event.get_data().unwrap()).unwrap();
         // find and drain the bus we are looking for and do something with it later
         // unwrapping is bad
-        let mut bus = self.drain_bus_by_uid(mapping.bus_uid).unwrap();
+        let mut bus = self.drain_bus_by_uid(bus_and_new_stop.bus_uid).unwrap();
         // find the stop we are looking for and add the bus to it
         // unwrapping is bad
-        let stop = self.find_mut_stop_by_name(&mapping.stop_name).unwrap();
+        let stop = self
+            .find_mut_stop_by_name(&bus_and_new_stop.stop_name)
+            .unwrap();
 
         // Need to schedule the bus unloading passengers at this stop
-
-        // TODO
+        let schedule_unload_passengers = Box::new(UnloadPassengersEvent::new(
+            event.get_uid() + 1,
+            event.get_time_stamp(),
+            serde_json::to_string(&UnloadPassengersJson::new(bus.uid)).unwrap(),
+        ));
+        scheduler.add_event(schedule_unload_passengers);
 
         // Need to scheudle bus loading passengers at this stop
         let schedule_load_passengers = Box::new(LoadPassengersEvent::new(
@@ -207,8 +214,6 @@ impl BusEnvironment {
         ));
         scheduler.add_event(schedule_load_passengers);
 
-        // Advance the bus to the next stop, as we have arrived at the new stop
-        bus.advance_to_next_stop();
         // Schedule this bus to move to the next stop unless its at the end of the line
         if let Some(next_stop) = bus.get_next_stop() {
             let mapping = BusToStopMappingJson::new(bus.uid, next_stop.to_string());
@@ -220,12 +225,14 @@ impl BusEnvironment {
             scheduler.add_event(next_event);
         }
 
+        // Advance the bus to the next stop, as we have arrived to the current stop
+        bus.advance_to_next_stop();
+
+        // Finally, add the bus to the current stop.
         stop.add_bus(bus);
     }
 
     fn apply_load_passengers_event(&mut self, _scheduler: &mut Scheduler, event: Box<dyn Event>) {
-        println!("Load Passengers! (temporary representation of bus event)");
-        println!("Bus event with UID: {}", event.get_uid());
         let bus_uid = serde_json::from_str::<LoadPassengersJson>(&event.get_data().unwrap())
             .expect("Error: Could not deserialize bus mapping")
             .bus_uid;
@@ -235,15 +242,31 @@ impl BusEnvironment {
             .iter_mut()
             .find(|b| b.uid == bus_uid)
             .unwrap(); // unwrap bad.
-        for key in &bus_at_stop.serviced_stop_names {
+        for key in &bus_at_stop.serviced_stop_names.clone() {
             if let Some(tentative_onboarders) = stop.waiting_passengers.get_mut(key) {
                 while !tentative_onboarders.is_empty()
-                    && bus_at_stop.passengers.len() < bus_at_stop.capacity
+                    && bus_at_stop.current_passenger_count() < bus_at_stop.capacity
                 {
-                    bus_at_stop
-                        .passengers
-                        .push(tentative_onboarders.pop().unwrap()); // unwrap bad
+                    bus_at_stop.add_passenger(tentative_onboarders.pop().unwrap());
+                    // unwrap bad
                 }
+            }
+        }
+    }
+
+    fn apply_unload_passengers_event(&mut self, _scheduler: &mut Scheduler, event: Box<dyn Event>) {
+        let bus_uid = serde_json::from_str::<LoadPassengersJson>(&event.get_data().unwrap())
+            .expect("Error: Could not deserialize bus mapping")
+            .bus_uid;
+        if let Some(stop) = self.find_mut_stop_by_bus_uid(bus_uid) {
+            let bus_at_stop = stop
+                .buses_at_stop
+                .iter_mut()
+                .find(|b| b.uid == bus_uid)
+                .unwrap(); // unwrap bad.
+            if let Some(passengers_getting_off) = bus_at_stop.passengers.get_mut(stop.name.as_str())
+            {
+                stop.completed_passengers.append(passengers_getting_off);
             }
         }
     }
@@ -254,12 +277,10 @@ impl Display for BusEnvironment {
         writeln!(f, "Bus Stops:\tBuses:")?;
         for stop in self.bus_stops.iter() {
             write!(f, "{} ", &stop)?;
-            // self.print_buses_at_stop(stop, f)?;
             writeln!(f)?;
         }
 
         writeln!(f)?;
-        // self.print_bus_details(f)?;
 
         Ok(())
     }

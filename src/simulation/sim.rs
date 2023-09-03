@@ -35,14 +35,17 @@ impl Simulation {
 
     pub fn play_movie(&mut self, delay_millis: u64) {
         while let Some(event) = self.scheduler.next_event() {
-            self.environment.apply_event(&mut self.scheduler, event);
             // Clear screen for animation
             let _ = execute!(io::stdout(), terminal::Clear(terminal::ClearType::All));
             // hide cursor
             let _ = execute!(io::stdout(), cursor::Hide);
 
             println!("Current Time: {}", self.scheduler.current_time);
+            println!("Current Event: {}", event);
             print!("\r{}", self.environment);
+
+            // apply the event
+            self.environment.apply_event(&mut self.scheduler, event);
 
             io::stdout().flush().unwrap();
 

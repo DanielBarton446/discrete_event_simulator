@@ -1,6 +1,6 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, fmt::Display};
 
-pub trait Event {
+pub trait Event: Display {
     fn get_event_type(&self) -> &str;
     fn get_uid(&self) -> usize;
     fn get_time_stamp(&self) -> f64;

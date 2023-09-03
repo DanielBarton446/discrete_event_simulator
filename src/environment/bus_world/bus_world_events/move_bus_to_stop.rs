@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 use crate::event::event::Event;
 use serde::{Deserialize, Serialize};
 
@@ -44,5 +46,15 @@ impl Event for MoveBusToStopEvent {
 
     fn get_data(&self) -> Result<String, serde_json::Error> {
         Ok(self.data.clone())
+    }
+}
+
+impl Display for MoveBusToStopEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        write!(
+            f,
+            "MoveBusToStopEvent: event uid: {}, Data: {}",
+            self.uid, self.data
+        )
     }
 }
