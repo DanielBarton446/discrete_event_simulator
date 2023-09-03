@@ -1,10 +1,13 @@
-use std::fmt::{Display, Error, Formatter};
+use std::{
+    collections::HashMap,
+    fmt::{Display, Error, Formatter},
+};
 
 use crate::environment::bus_world::passenger::Passenger;
 
 pub struct Bus {
     pub uid: usize,
-    pub passengers: Vec<Passenger>,
+    pub passengers: HashMap<String, Vec<Passenger>>,
     pub serviced_stop_names: Vec<String>,
     current_stop: usize,
     pub capacity: usize,
@@ -14,7 +17,7 @@ impl Bus {
     pub fn new(uid: usize, capacity: usize) -> Bus {
         Bus {
             uid,
-            passengers: Vec::new(),
+            passengers: HashMap::new(),
             serviced_stop_names: Vec::new(),
             current_stop: 0,
             capacity,
@@ -22,11 +25,18 @@ impl Bus {
     }
 
     pub fn add_passenger(&mut self, passenger: Passenger) {
-        self.passengers.push(passenger);
+        self.passengers
+            .entry(passenger.destination.clone())
+            .or_insert_with(Vec::new)
+            .push(passenger);
     }
 
     pub fn add_serviced_stop(&mut self, stop: String) {
         self.serviced_stop_names.push(stop);
+    }
+
+    pub fn current_passenger_count(&self) -> usize {
+        self.passengers.values().map(|v| v.len()).sum()
     }
 
     pub fn get_current_stop(&self) -> Option<&String> {
@@ -44,12 +54,6 @@ impl Bus {
 
 impl Display for Bus {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
-        let passenger_display = self
-            .passengers
-            .iter()
-            .map(|p| p.to_string())
-            .collect::<Vec<String>>()
-            .join(", ");
         write!(f, "[Bus {}]", self.uid)
     }
 }
