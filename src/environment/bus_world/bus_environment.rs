@@ -265,16 +265,6 @@ impl BusEnvironment {
             .find(|b| b.uid == bus_uid)
             .unwrap(); // unwrap bad.
 
-        // Report stats on Passengers currently loaded
-        let data_point = DataPoint::new(
-            event.get_time_stamp(),
-            bus_at_stop.current_passenger_count() as f64,
-        );
-        stat_recorder.add_statistic(
-            data_point,
-            format!("Bus {}: Passenger Count", bus_at_stop.uid),
-        );
-
         for key in &bus_at_stop.serviced_stop_names.clone() {
             if let Some(tentative_onboarders) = stop.waiting_passengers.get_mut(key) {
                 while !tentative_onboarders.is_empty()
@@ -306,6 +296,20 @@ impl BusEnvironment {
             {
                 stop.completed_passengers.append(passengers_getting_off);
             }
+
+            // Report stats on Passengers currently loaded
+            let data_point = DataPoint::new(
+                event.get_time_stamp(),
+                bus_at_stop.current_passenger_count() as f64,
+                String::from("Passengers (ct)"),
+            );
+            stat_recorder.add_statistic(
+                data_point,
+                format!(
+                    "Bus {}: Passenger Count After Trying Unload",
+                    bus_at_stop.uid
+                ),
+            );
         }
     }
 }
