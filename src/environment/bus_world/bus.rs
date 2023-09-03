@@ -4,18 +4,20 @@ use crate::environment::bus_world::passenger::Passenger;
 
 pub struct Bus {
     pub uid: usize,
-    passengers: Vec<Passenger>,
-    serviced_stop_names: Vec<String>,
+    pub passengers: Vec<Passenger>,
+    pub serviced_stop_names: Vec<String>,
     current_stop: usize,
+    pub capacity: usize,
 }
 
 impl Bus {
-    pub fn new(uid: usize) -> Bus {
+    pub fn new(uid: usize, capacity: usize) -> Bus {
         Bus {
             uid,
             passengers: Vec::new(),
             serviced_stop_names: Vec::new(),
             current_stop: 0,
+            capacity,
         }
     }
 

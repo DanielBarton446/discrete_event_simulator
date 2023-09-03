@@ -5,10 +5,14 @@ use crate::event::event::Event;
 #[derive(Deserialize, Serialize)]
 pub struct NewBusesJson {
     pub number_of_buses: usize,
+    pub capacity: usize,
 }
 impl NewBusesJson {
-    pub fn new(number_of_buses: usize) -> Self {
-        Self { number_of_buses }
+    pub fn new(number_of_buses: usize, capacity: usize) -> Self {
+        Self {
+            number_of_buses,
+            capacity,
+        }
     }
 }
 

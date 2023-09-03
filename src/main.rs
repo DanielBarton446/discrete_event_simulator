@@ -7,7 +7,7 @@ use discrete_event_simulator::{
 fn main() {
     println!("Create a bus world simulation!");
     let mut env = BusEnvironment::new();
-    let buses = NewBusesJson::new(5);
+    let buses = NewBusesJson::new(5, 19);
     let init_event = Box::new(NewBusEvent::new(
         0,
         0.0,
