@@ -146,9 +146,6 @@ impl Environment for BusEnvironment {
 
 impl BusEnvironment {
     fn apply_new_bus_event(&mut self, scheduler: &mut Scheduler, event: Box<dyn Event>) {
-        println!("New Bus! (temporary representation of bus event)");
-        println!("Bus event with UID: {}", event.get_uid());
-
         let bus_mapping = serde_json::from_str::<NewBusesJson>(&event.get_data().unwrap())
             .expect("Error: Could not deserialize bus mapping");
 
@@ -236,8 +233,6 @@ impl BusEnvironment {
     }
 
     fn apply_load_passengers_event(&mut self, _scheduler: &mut Scheduler, event: Box<dyn Event>) {
-        println!("Load Passengers!");
-        println!("Load Passengers Event with UID: {}", event.get_uid());
         let bus_uid = serde_json::from_str::<LoadPassengersJson>(&event.get_data().unwrap())
             .expect("Error: Could not deserialize bus mapping")
             .bus_uid;
@@ -260,8 +255,6 @@ impl BusEnvironment {
     }
 
     fn apply_unload_passengers_event(&mut self, _scheduler: &mut Scheduler, event: Box<dyn Event>) {
-        println!("Unload Passengers!");
-        println!("Unload Passengers Event with UID {}", event.get_uid());
         let bus_uid = serde_json::from_str::<LoadPassengersJson>(&event.get_data().unwrap())
             .expect("Error: Could not deserialize bus mapping")
             .bus_uid;
@@ -284,12 +277,10 @@ impl Display for BusEnvironment {
         writeln!(f, "Bus Stops:\tBuses:")?;
         for stop in self.bus_stops.iter() {
             write!(f, "{} ", &stop)?;
-            // self.print_buses_at_stop(stop, f)?;
             writeln!(f)?;
         }
 
         writeln!(f)?;
-        // self.print_bus_details(f)?;
 
         Ok(())
     }

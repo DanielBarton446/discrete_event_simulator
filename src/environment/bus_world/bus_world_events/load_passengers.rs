@@ -1,3 +1,5 @@
+use std::fmt::{Display, Error, Formatter};
+
 use serde::{Deserialize, Serialize};
 
 use crate::event::event::Event;
@@ -44,5 +46,15 @@ impl Event for LoadPassengersEvent {
 
     fn get_data(&self) -> Result<String, serde_json::Error> {
         Ok(self.data.clone())
+    }
+}
+
+impl Display for LoadPassengersEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        write!(
+            f,
+            "LoadPassengersEvent: uid: {} for bus uid: {}",
+            self.uid, self.data,
+        )
     }
 }
