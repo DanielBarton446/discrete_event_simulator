@@ -11,7 +11,7 @@ pub trait Event: Display {
 
 impl Ord for dyn Event {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.get_time_stamp().cmp(&other.get_time_stamp())
+        self.get_time_stamp().cmp(&other.get_time_stamp()).reverse()
     }
 }
 
