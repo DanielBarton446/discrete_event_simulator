@@ -7,15 +7,15 @@ use crate::event::event::Event;
 use std::collections::BinaryHeap;
 
 pub struct Scheduler {
-    pub current_time: f64,
-    pub runtime: f64,
+    pub current_time: usize,
+    pub runtime: usize,
     pub event_queue: BinaryHeap<Box<dyn Event>>,
 }
 
 impl Scheduler {
-    pub fn new(runtime: f64) -> Scheduler {
+    pub fn new(runtime: usize) -> Scheduler {
         Scheduler {
-            current_time: 0.0,
+            current_time: 0,
             runtime,
             event_queue: BinaryHeap::<Box<dyn Event>>::new(),
         }

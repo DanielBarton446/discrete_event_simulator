@@ -42,7 +42,7 @@ mod tests {
     #[test]
     fn create_add_new_statistic() {
         let mut stats = Stats::new();
-        let data_point = DataPoint::new(0, 1.0);
+        let data_point = DataPoint::new(0, 1.0, String::from("fake_unit"));
         assert_eq!(stats.all_series.len(), 0);
         stats.add_statistic(data_point, "test".to_string());
         assert_eq!(stats.all_series.len(), 1);

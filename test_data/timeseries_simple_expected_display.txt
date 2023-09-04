@@ -1,5 +1,5 @@
 ====
 test
 ====
-Timestamp | Value
+Timestamp | fake_unit
 0         | 1.1

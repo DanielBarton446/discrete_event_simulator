@@ -7,21 +7,24 @@ use crossterm::{cursor, execute, terminal};
 use crate::des::des::Scheduler;
 use crate::environment::environment::Environment;
 use crate::event::event::Event;
+use crate::statistics::stats::Stats;
 
 pub struct Simulation {
     scheduler: Scheduler,
     pub environment: Box<dyn Environment>,
+    pub statistics: Stats,
 }
 
 impl Simulation {
     pub fn new(
-        runtime: f64,
+        runtime: usize,
         environment: Box<dyn Environment>,
         initial_event: Box<dyn Event>,
     ) -> Self {
         let mut sim = Simulation {
             scheduler: Scheduler::new(runtime),
             environment,
+            statistics: Stats::new(),
         };
         sim.scheduler.add_event(initial_event);
         return sim;
@@ -29,7 +32,8 @@ impl Simulation {
 
     pub fn run(&mut self) {
         while let Some(event) = self.scheduler.next_event() {
-            self.environment.apply_event(&mut self.scheduler, event);
+            self.environment
+                .apply_event(&mut self.scheduler, &mut self.statistics, event);
         }
     }
 
@@ -45,11 +49,16 @@ impl Simulation {
             print!("\r{}", self.environment);
 
             // apply the event
-            self.environment.apply_event(&mut self.scheduler, event);
+            self.environment
+                .apply_event(&mut self.scheduler, &mut self.statistics, event);
 
             io::stdout().flush().unwrap();
 
             thread::sleep(Duration::from_millis(delay_millis));
+        }
+        // Display statistics:
+        for series in &self.statistics.all_series {
+            println!("{}", series);
         }
     }
 
@@ -70,12 +79,12 @@ mod test {
         let number_of_buses = NewBusesJson::new(10, 15);
         let initial_event = Box::new(NewBusEvent::new(
             1,
-            0.0,
+            0,
             serde_json::to_string(&number_of_buses).unwrap(),
         ));
         let mut env = BusEnvironment::new();
         env.create_bus_stops(1);
-        let mut simulation = Simulation::new(10.0, Box::new(env), initial_event);
+        let mut simulation = Simulation::new(10, Box::new(env), initial_event);
         simulation.run();
         assert_eq!(simulation.environment.get_state(), "Number of buses: 10");
     }
