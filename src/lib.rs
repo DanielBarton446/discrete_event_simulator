@@ -20,6 +20,7 @@ pub mod environment {
     pub mod bus_world {
         pub mod bus;
         pub mod bus_environment;
+        pub mod bus_scenario_traits;
         pub mod bus_stop;
         pub mod passenger;
         pub mod bus_world_events {

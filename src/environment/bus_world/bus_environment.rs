@@ -3,6 +3,9 @@ use std::str::FromStr;
 
 use crate::des::des::Scheduler;
 use crate::environment::bus_world::bus::Bus;
+use crate::environment::bus_world::bus_scenario_traits::{
+    AdvanceVehicleHandler, NewVehicleHandler, PassengerTransportHandler,
+};
 use crate::environment::bus_world::bus_stop::BusStop;
 use crate::environment::bus_world::bus_world_events::new_bus::NewBusesJson;
 use crate::environment::bus_world::bus_world_events::{load_passengers::*, move_bus_to_stop::*};
@@ -126,16 +129,16 @@ impl Environment for BusEnvironment {
     ) {
         match BusEventTypes::from_str(event.get_event_type()) {
             Ok(BusEventTypes::NewBus) => {
-                self.apply_new_bus_event(scheduler, stat_recorder, event);
+                self.create_new_bus(scheduler, stat_recorder, event);
             }
             Ok(BusEventTypes::MoveBusToStop) => {
-                self.apply_move_bus_to_stop_event(scheduler, stat_recorder, event);
+                self.advance_bus_to_next_stop(scheduler, stat_recorder, event);
             }
             Ok(BusEventTypes::LoadPassengers) => {
-                self.apply_load_passengers_event(scheduler, stat_recorder, event);
+                self.load_passengers(scheduler, stat_recorder, event);
             }
             Ok(BusEventTypes::UnloadPassengers) => {
-                self.apply_unload_passengers_event(scheduler, stat_recorder, event);
+                self.unload_passengers(scheduler, stat_recorder, event);
             }
             Err(()) => {
                 panic!("Error: Unknown event type {}", event.get_event_type())
@@ -151,53 +154,87 @@ impl Environment for BusEnvironment {
     }
 }
 
-impl BusEnvironment {
-    fn apply_new_bus_event(
+impl PassengerTransportHandler for BusEnvironment {
+    fn load_passengers(
         &mut self,
-        scheduler: &mut Scheduler,
+        _scheduler: &mut Scheduler,
         stat_recorder: &mut Stats,
         event: Box<dyn Event>,
     ) {
-        let bus_mapping = serde_json::from_str::<NewBusesJson>(&event.get_data().unwrap())
-            .expect("Error: Could not deserialize bus mapping");
+        let bus_uid = serde_json::from_str::<LoadPassengersJson>(&event.get_data().unwrap())
+            .expect("Error: Could not deserialize bus mapping")
+            .bus_uid;
+        let stop = self.find_mut_stop_by_bus_uid(bus_uid).unwrap();
+        let bus_at_stop = stop
+            .buses_at_stop
+            .iter_mut()
+            .find(|b| b.uid == bus_uid)
+            .unwrap(); // unwrap bad.
 
-        for i in 0..bus_mapping.number_of_buses {
-            let mut bus = Bus::new(i, bus_mapping.capacity);
-
-            for stop in &mut self.bus_stops {
-                bus.add_serviced_stop(stop.name.clone());
-            }
-            // again unwrapping bad
-            let bus_routing = match bus.get_next_stop() {
-                Some(next_stop) => BusToStopMappingJson::new(bus.uid, next_stop.to_string()),
-                None => {
-                    BusToStopMappingJson::new(bus.uid, bus.get_current_stop().unwrap().to_string())
+        let mut onboarded_passengers_count = 0;
+        for key in &bus_at_stop.serviced_stop_names.clone() {
+            if let Some(tentative_onboarders) = stop.waiting_passengers.get_mut(key) {
+                while !tentative_onboarders.is_empty()
+                    && bus_at_stop.current_passenger_count() < bus_at_stop.capacity
+                {
+                    bus_at_stop.add_passenger(tentative_onboarders.pop().unwrap());
+                    onboarded_passengers_count += 1;
+                    // unwrap bad
                 }
-            };
-
-            // Load initial bus passengers at first stop
-            let schedule_load_passengers = Box::new(LoadPassengersEvent::new(
-                event.get_uid() + 1,
-                event.get_time_stamp() + 1,
-                serde_json::to_string(&LoadPassengersJson::new(bus.uid)).unwrap(),
-            ));
-            scheduler.add_event(schedule_load_passengers);
-
-            // Add bus to the stop
-            self.bus_stops[0].add_bus(bus);
-
-            // Schedule the bus to move to the next stop
-            let start_bus_route = Box::new(MoveBusToStopEvent::new(
-                event.get_uid() + 1,
-                event.get_time_stamp() + 5, // This should be something long for moving between stops
-                serde_json::to_string(&bus_routing).unwrap(),
-            ));
-
-            scheduler.add_event(start_bus_route);
+            }
         }
+
+        // Stats, report the count of passengers onboarded
+        let data_point = DataPoint::new(
+            event.get_time_stamp(),
+            onboarded_passengers_count as f64,
+            "passengers loaded".to_string(),
+        );
+        stat_recorder.add_statistic(
+            data_point,
+            format!("bus {}: passengers loaded", bus_at_stop.uid),
+        );
     }
 
-    fn apply_move_bus_to_stop_event(
+    fn unload_passengers(
+        &mut self,
+        _scheduler: &mut Scheduler,
+        stat_recorder: &mut Stats,
+        event: Box<dyn Event>,
+    ) {
+        let bus_uid = serde_json::from_str::<LoadPassengersJson>(&event.get_data().unwrap())
+            .expect("Error: Could not deserialize bus mapping")
+            .bus_uid;
+        if let Some(stop) = self.find_mut_stop_by_bus_uid(bus_uid) {
+            let bus_at_stop = stop
+                .buses_at_stop
+                .iter_mut()
+                .find(|b| b.uid == bus_uid)
+                .unwrap(); // unwrap bad.
+            if let Some(passengers_getting_off) = bus_at_stop.passengers.get_mut(stop.name.as_str())
+            {
+                stop.completed_passengers.append(passengers_getting_off);
+            }
+
+            // Report stats on Passengers currently loaded
+            let data_point = DataPoint::new(
+                event.get_time_stamp(),
+                bus_at_stop.current_passenger_count() as f64,
+                String::from("Passengers (ct)"),
+            );
+            stat_recorder.add_statistic(
+                data_point,
+                format!(
+                    "Bus {}: Passenger Count After Trying Unload",
+                    bus_at_stop.uid
+                ),
+            );
+        }
+    }
+}
+
+impl AdvanceVehicleHandler for BusEnvironment {
+    fn advance_bus_to_next_stop(
         &mut self,
         scheduler: &mut Scheduler,
         stat_recorder: &mut Stats,
@@ -247,69 +284,60 @@ impl BusEnvironment {
 
         // Finally, add the bus to the current stop.
         stop.add_bus(bus);
-    }
 
-    fn apply_load_passengers_event(
+        // Stats, report the count of buses at this stop now
+        let data_point = DataPoint::new(
+            event.get_time_stamp(),
+            stop.buses_at_stop.len() as f64,
+            "bus_count".to_string(),
+        );
+        stat_recorder.add_statistic(data_point, format!("stop {}: buses", stop.name));
+    }
+}
+
+impl NewVehicleHandler for BusEnvironment {
+    fn create_new_bus(
         &mut self,
-        _scheduler: &mut Scheduler,
+        scheduler: &mut Scheduler,
         stat_recorder: &mut Stats,
         event: Box<dyn Event>,
     ) {
-        let bus_uid = serde_json::from_str::<LoadPassengersJson>(&event.get_data().unwrap())
-            .expect("Error: Could not deserialize bus mapping")
-            .bus_uid;
-        let stop = self.find_mut_stop_by_bus_uid(bus_uid).unwrap();
-        let bus_at_stop = stop
-            .buses_at_stop
-            .iter_mut()
-            .find(|b| b.uid == bus_uid)
-            .unwrap(); // unwrap bad.
+        let bus_mapping = serde_json::from_str::<NewBusesJson>(&event.get_data().unwrap())
+            .expect("Error: Could not deserialize bus mapping");
 
-        for key in &bus_at_stop.serviced_stop_names.clone() {
-            if let Some(tentative_onboarders) = stop.waiting_passengers.get_mut(key) {
-                while !tentative_onboarders.is_empty()
-                    && bus_at_stop.current_passenger_count() < bus_at_stop.capacity
-                {
-                    bus_at_stop.add_passenger(tentative_onboarders.pop().unwrap());
-                    // unwrap bad
+        for i in 0..bus_mapping.number_of_buses {
+            let mut bus = Bus::new(i, bus_mapping.capacity);
+
+            for stop in &mut self.bus_stops {
+                bus.add_serviced_stop(stop.name.clone());
+            }
+            // again unwrapping bad
+            let bus_routing = match bus.get_next_stop() {
+                Some(next_stop) => BusToStopMappingJson::new(bus.uid, next_stop.to_string()),
+                None => {
+                    BusToStopMappingJson::new(bus.uid, bus.get_current_stop().unwrap().to_string())
                 }
-            }
-        }
-    }
+            };
 
-    fn apply_unload_passengers_event(
-        &mut self,
-        _scheduler: &mut Scheduler,
-        stat_recorder: &mut Stats,
-        event: Box<dyn Event>,
-    ) {
-        let bus_uid = serde_json::from_str::<LoadPassengersJson>(&event.get_data().unwrap())
-            .expect("Error: Could not deserialize bus mapping")
-            .bus_uid;
-        if let Some(stop) = self.find_mut_stop_by_bus_uid(bus_uid) {
-            let bus_at_stop = stop
-                .buses_at_stop
-                .iter_mut()
-                .find(|b| b.uid == bus_uid)
-                .unwrap(); // unwrap bad.
-            if let Some(passengers_getting_off) = bus_at_stop.passengers.get_mut(stop.name.as_str())
-            {
-                stop.completed_passengers.append(passengers_getting_off);
-            }
+            // Load initial bus passengers at first stop
+            let schedule_load_passengers = Box::new(LoadPassengersEvent::new(
+                event.get_uid() + 1,
+                event.get_time_stamp() + 1,
+                serde_json::to_string(&LoadPassengersJson::new(bus.uid)).unwrap(),
+            ));
+            scheduler.add_event(schedule_load_passengers);
 
-            // Report stats on Passengers currently loaded
-            let data_point = DataPoint::new(
-                event.get_time_stamp(),
-                bus_at_stop.current_passenger_count() as f64,
-                String::from("Passengers (ct)"),
-            );
-            stat_recorder.add_statistic(
-                data_point,
-                format!(
-                    "Bus {}: Passenger Count After Trying Unload",
-                    bus_at_stop.uid
-                ),
-            );
+            // Add bus to the stop
+            self.bus_stops[0].add_bus(bus);
+
+            // Schedule the bus to move to the next stop
+            let start_bus_route = Box::new(MoveBusToStopEvent::new(
+                event.get_uid() + 1,
+                event.get_time_stamp() + 5, // This should be something long for moving between stops
+                serde_json::to_string(&bus_routing).unwrap(),
+            ));
+
+            scheduler.add_event(start_bus_route);
         }
     }
 }

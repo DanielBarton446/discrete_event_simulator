@@ -1,11 +1,11 @@
 use super::data_point::DataPoint;
 use std::{
     collections::BTreeMap,
-    env,
     fmt::{self, Display, Formatter},
     fs,
 };
 
+#[derive(Clone)]
 pub struct TimeSeries {
     pub statistic_label: String,
     pub unit: String,

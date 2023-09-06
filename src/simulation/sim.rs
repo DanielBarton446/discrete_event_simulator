@@ -57,7 +57,10 @@ impl Simulation {
             thread::sleep(Duration::from_millis(delay_millis));
         }
         // Display statistics:
-        for series in &self.statistics.all_series {
+        self.statistics
+            .all_series
+            .sort_by(|a, b| a.statistic_label.cmp(&b.statistic_label));
+        for series in self.statistics.all_series.iter() {
             println!("{}", series);
         }
     }
