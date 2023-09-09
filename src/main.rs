@@ -19,7 +19,5 @@ fn main() {
 
     let mut sim = Simulation::new(100, Box::new(env), init_event);
     sim.play_movie(100);
-    println!("World representation serialized json:");
-    println!("{}", &sim.environment.get_state());
     // sim.run();
 }
