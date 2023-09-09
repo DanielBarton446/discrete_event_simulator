@@ -3,8 +3,11 @@ use std::{
     fmt::{Display, Error, Formatter},
 };
 
+use serde::Serialize;
+
 use super::{bus::Bus, passenger::Passenger};
 
+#[derive(Serialize)]
 pub struct BusStop {
     pub name: String,
     pub waiting_passengers: HashMap<String, Vec<Passenger>>,

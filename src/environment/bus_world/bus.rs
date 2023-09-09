@@ -3,8 +3,11 @@ use std::{
     fmt::{Display, Error, Formatter},
 };
 
+use serde::Serialize;
+
 use crate::environment::bus_world::passenger::Passenger;
 
+#[derive(Serialize)]
 pub struct Bus {
     pub uid: usize,
     pub passengers: HashMap<String, Vec<Passenger>>,

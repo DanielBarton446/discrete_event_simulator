@@ -18,6 +18,8 @@ use super::bus_world_events::move_bus_to_stop::BusToStopMappingJson;
 use super::bus_world_events::unload_passengers::{UnloadPassengersEvent, UnloadPassengersJson};
 use super::passenger::Passenger;
 
+use serde::Serialize;
+
 enum BusEventTypes {
     NewBus,
     MoveBusToStop,
@@ -39,6 +41,7 @@ impl FromStr for BusEventTypes {
     }
 }
 
+#[derive(Serialize)]
 pub struct BusEnvironment {
     bus_stops: Vec<BusStop>,
 }
@@ -146,11 +149,15 @@ impl Environment for BusEnvironment {
         }
     }
     fn get_state(&self) -> String {
-        let mut number_of_buses = 0;
-        for bus_stop in &self.bus_stops {
-            number_of_buses += bus_stop.buses_at_stop.len();
+        // let mut number_of_buses = 0;
+        // for bus_stop in &self.bus_stops {
+        //     number_of_buses += bus_stop.buses_at_stop.len();
+        // }
+        // format!("Number of buses: {}", number_of_buses)
+        if let Ok(serialized) = serde_json::to_string(&self.bus_stops) {
+            return serialized;
         }
-        format!("Number of buses: {}", number_of_buses)
+        return String::new();
     }
 }
 
@@ -299,7 +306,7 @@ impl NewVehicleHandler for BusEnvironment {
     fn create_new_bus(
         &mut self,
         scheduler: &mut Scheduler,
-        stat_recorder: &mut Stats,
+        _stat_recorder: &mut Stats,
         event: Box<dyn Event>,
     ) {
         let bus_mapping = serde_json::from_str::<NewBusesJson>(&event.get_data().unwrap())

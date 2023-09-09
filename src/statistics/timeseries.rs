@@ -2,7 +2,6 @@ use super::data_point::DataPoint;
 use std::{
     collections::BTreeMap,
     fmt::{self, Display, Formatter},
-    fs,
 };
 
 #[derive(Clone)]
