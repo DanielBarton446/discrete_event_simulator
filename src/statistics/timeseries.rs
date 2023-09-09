@@ -48,43 +48,51 @@ impl Display for TimeSeries {
     }
 }
 
-#[test]
-fn create_new_timeseries() {
-    let time_series = TimeSeries::new("test".to_string());
-    assert_eq!(time_series.statistic_label, "test");
-    assert_eq!(time_series.series.len(), 0);
-}
+#[cfg(test)]
+mod tests {
+    use std::fs;
 
-#[test]
-fn add_data_point_to_timeseries() {
-    let mut time_series = TimeSeries::new("test".to_string());
-    let data_point = DataPoint::new(0, 1.0, String::from("fake_unit"));
-    time_series.add_data_point(&data_point);
-    assert_eq!(time_series.series.len(), 1);
-    assert_eq!(time_series.series.get(&0), Some(&1.0));
-}
+    use crate::statistics::{data_point::DataPoint, timeseries::TimeSeries};
 
-#[test]
-fn display_simple_timeseries() {
-    let mut time_series = TimeSeries::new("test".to_string());
-    let data_point = DataPoint::new(0, 1.1, String::from("fake_unit"));
-    time_series.add_data_point(&data_point);
-    let expected_output = fs::read_to_string("./test_data/timeseries_simple_expected_display.txt")
-        .expect("Failed to read test data for simple timeseries display");
-    dbg!(&expected_output);
-    assert_eq!(expected_output, format!("{}", time_series));
-}
+    #[test]
+    fn create_new_timeseries() {
+        let time_series = TimeSeries::new("test".to_string());
+        assert_eq!(time_series.statistic_label, "test");
+        assert_eq!(time_series.series.len(), 0);
+    }
 
-#[test]
-fn display_multiple_datapoints() {
-    let mut time_series = TimeSeries::new("test".to_string());
-    let data_point = DataPoint::new(0, 1.1, String::from("fake_unit"));
-    let data_point_new = DataPoint::new(20, 2.2, String::from("fake_unit"));
-    time_series.add_data_point(&data_point);
-    time_series.add_data_point(&data_point_new);
-    let expected_output =
-        fs::read_to_string("./test_data/timeseries_multiple_data_expected_display.txt")
-            .expect("Failed to read test data for multiple datapoints timeseries display");
-    dbg!(&expected_output);
-    assert_eq!(expected_output, format!("{}", time_series));
+    #[test]
+    fn add_data_point_to_timeseries() {
+        let mut time_series = TimeSeries::new("test".to_string());
+        let data_point = DataPoint::new(0, 1.0, String::from("fake_unit"));
+        time_series.add_data_point(&data_point);
+        assert_eq!(time_series.series.len(), 1);
+        assert_eq!(time_series.series.get(&0), Some(&1.0));
+    }
+
+    #[test]
+    fn display_simple_timeseries() {
+        let mut time_series = TimeSeries::new("test".to_string());
+        let data_point = DataPoint::new(0, 1.1, String::from("fake_unit"));
+        time_series.add_data_point(&data_point);
+        let expected_output =
+            fs::read_to_string("./test_data/timeseries_simple_expected_display.txt")
+                .expect("Failed to read test data for simple timeseries display");
+        dbg!(&expected_output);
+        assert_eq!(expected_output, format!("{}", time_series));
+    }
+
+    #[test]
+    fn display_multiple_datapoints() {
+        let mut time_series = TimeSeries::new("test".to_string());
+        let data_point = DataPoint::new(0, 1.1, String::from("fake_unit"));
+        let data_point_new = DataPoint::new(20, 2.2, String::from("fake_unit"));
+        time_series.add_data_point(&data_point);
+        time_series.add_data_point(&data_point_new);
+        let expected_output =
+            fs::read_to_string("./test_data/timeseries_multiple_data_expected_display.txt")
+                .expect("Failed to read test data for multiple datapoints timeseries display");
+        dbg!(&expected_output);
+        assert_eq!(expected_output, format!("{}", time_series));
+    }
 }
