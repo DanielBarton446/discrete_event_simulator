@@ -73,7 +73,7 @@ impl Simulation {
 #[cfg(test)]
 mod test {
 
-    use crate::environment::bus_world::bus_environment::BusEnvironment;
+    use crate::environment::bus_world::bus_environment::{BusEnvironment, BusEnvironmentSettings};
     use crate::environment::bus_world::bus_world_events::new_bus::{NewBusEvent, NewBusesJson};
     use crate::simulation::sim::Simulation;
 
@@ -85,12 +85,11 @@ mod test {
             0,
             serde_json::to_string(&number_of_buses).unwrap(),
         ));
-        let mut env = BusEnvironment::new();
-        env.create_bus_stops(1);
-        let mut simulation = Simulation::new(10, Box::new(env), initial_event);
+        let settings = BusEnvironmentSettings::default();
+        let mut env = BusEnvironment::new(settings);
+        env.create_bus_stops(3);
+        let mut simulation = Simulation::new(100, Box::new(env), initial_event);
         simulation.run();
-        // we are gonna pretend that the output from this test is consistently this and that it
-        // makes sense
-        assert_eq!(simulation.environment.get_state(), "[{\"name\":\"A\",\"waiting_passengers\":{},\"completed_passengers\":[],\"buses_at_stop\":[{\"uid\":0,\"passengers\":{},\"serviced_stop_names\":[\"A\"],\"current_stop\":0,\"capacity\":15},{\"uid\":1,\"passengers\":{},\"serviced_stop_names\":[\"A\"],\"current_stop\":0,\"capacity\":15},{\"uid\":2,\"passengers\":{},\"serviced_stop_names\":[\"A\"],\"current_stop\":0,\"capacity\":15},{\"uid\":3,\"passengers\":{},\"serviced_stop_names\":[\"A\"],\"current_stop\":0,\"capacity\":15},{\"uid\":4,\"passengers\":{},\"serviced_stop_names\":[\"A\"],\"current_stop\":0,\"capacity\":15},{\"uid\":5,\"passengers\":{},\"serviced_stop_names\":[\"A\"],\"current_stop\":0,\"capacity\":15},{\"uid\":6,\"passengers\":{},\"serviced_stop_names\":[\"A\"],\"current_stop\":0,\"capacity\":15},{\"uid\":7,\"passengers\":{},\"serviced_stop_names\":[\"A\"],\"current_stop\":0,\"capacity\":15},{\"uid\":8,\"passengers\":{},\"serviced_stop_names\":[\"A\"],\"current_stop\":0,\"capacity\":15},{\"uid\":9,\"passengers\":{},\"serviced_stop_names\":[\"A\"],\"current_stop\":0,\"capacity\":15}]}]");
+        assert_eq!(simulation.environment.get_state(), "[{\"name\":\"A\",\"waiting_passengers\":{},\"completed_passengers\":[],\"buses_at_stop\":[]},{\"name\":\"B\",\"waiting_passengers\":{},\"completed_passengers\":[],\"buses_at_stop\":[]},{\"name\":\"C\",\"waiting_passengers\":{},\"completed_passengers\":[],\"buses_at_stop\":[{\"uid\":0,\"passengers\":{},\"serviced_stop_names\":[\"A\",\"B\",\"C\"],\"current_stop\":2,\"capacity\":15},{\"uid\":6,\"passengers\":{},\"serviced_stop_names\":[\"A\",\"B\",\"C\"],\"current_stop\":2,\"capacity\":15},{\"uid\":8,\"passengers\":{},\"serviced_stop_names\":[\"A\",\"B\",\"C\"],\"current_stop\":2,\"capacity\":15},{\"uid\":7,\"passengers\":{},\"serviced_stop_names\":[\"A\",\"B\",\"C\"],\"current_stop\":2,\"capacity\":15},{\"uid\":2,\"passengers\":{},\"serviced_stop_names\":[\"A\",\"B\",\"C\"],\"current_stop\":2,\"capacity\":15},{\"uid\":9,\"passengers\":{},\"serviced_stop_names\":[\"A\",\"B\",\"C\"],\"current_stop\":2,\"capacity\":15},{\"uid\":3,\"passengers\":{},\"serviced_stop_names\":[\"A\",\"B\",\"C\"],\"current_stop\":2,\"capacity\":15},{\"uid\":5,\"passengers\":{},\"serviced_stop_names\":[\"A\",\"B\",\"C\"],\"current_stop\":2,\"capacity\":15},{\"uid\":4,\"passengers\":{},\"serviced_stop_names\":[\"A\",\"B\",\"C\"],\"current_stop\":2,\"capacity\":15},{\"uid\":1,\"passengers\":{},\"serviced_stop_names\":[\"A\",\"B\",\"C\"],\"current_stop\":2,\"capacity\":15}]}]");
     }
 }

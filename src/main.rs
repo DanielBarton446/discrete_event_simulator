@@ -1,12 +1,13 @@
 use discrete_event_simulator::{
     environment::bus_world::bus_environment::BusEnvironment,
+    environment::bus_world::bus_environment::BusEnvironmentSettings,
     environment::bus_world::bus_world_events::new_bus::{NewBusEvent, NewBusesJson},
     simulation::sim::Simulation,
 };
 
 fn main() {
     println!("Create a bus world simulation!");
-    let mut env = BusEnvironment::new();
+    let mut env = BusEnvironment::new(BusEnvironmentSettings::default());
     let buses = NewBusesJson::new(5, 5);
     let init_event = Box::new(NewBusEvent::new(
         0,
