@@ -1,12 +1,13 @@
 use discrete_event_simulator::{
     environment::bus_world::bus_environment::BusEnvironment,
+    environment::bus_world::bus_environment::BusEnvironmentSettings,
     environment::bus_world::bus_world_events::new_bus::{NewBusEvent, NewBusesJson},
     simulation::sim::Simulation,
 };
 
 fn main() {
     println!("Create a bus world simulation!");
-    let mut env = BusEnvironment::new();
+    let mut env = BusEnvironment::new(BusEnvironmentSettings::default());
     let buses = NewBusesJson::new(5, 5);
     let init_event = Box::new(NewBusEvent::new(
         0,
@@ -19,7 +20,5 @@ fn main() {
 
     let mut sim = Simulation::new(100, Box::new(env), init_event);
     sim.play_movie(100);
-    println!("World representation serialized json:");
-    println!("{}", &sim.environment.get_state());
     // sim.run();
 }
