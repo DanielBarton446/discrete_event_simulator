@@ -7,6 +7,7 @@ use crossterm::{cursor, execute, terminal};
 use crate::des::des::Scheduler;
 use crate::environment::environment::Environment;
 use crate::event::event::Event;
+use crate::statistics::data_point::DataPoint;
 use crate::statistics::stats::Stats;
 
 pub struct Simulation {
@@ -31,10 +32,19 @@ impl Simulation {
     }
 
     pub fn run(&mut self) {
+        let mut event_count = 0;
         while let Some(event) = self.scheduler.next_event() {
             self.environment
                 .apply_event(&mut self.scheduler, &mut self.statistics, event);
+            event_count += 1;
         }
+        let data_point = DataPoint::new(
+            self.scheduler.current_time,
+            event_count as f64,
+            "Count".to_string(),
+        );
+        self.statistics
+            .add_statistic(data_point, "Events Ran".to_string())
     }
 
     pub fn play_movie(&mut self, delay_millis: u64) {
