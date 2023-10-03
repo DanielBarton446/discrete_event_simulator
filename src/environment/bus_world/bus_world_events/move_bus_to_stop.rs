@@ -5,13 +5,16 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
 pub struct BusToStopMappingJson {
-    pub bus_uid: usize,
+    pub bus_uuid: String,
     pub stop_name: String,
 }
 
 impl BusToStopMappingJson {
-    pub fn new(bus_uid: usize, stop_name: String) -> Self {
-        Self { bus_uid, stop_name }
+    pub fn new(bus_uuid: String, stop_name: String) -> Self {
+        Self {
+            bus_uuid,
+            stop_name,
+        }
     }
 }
 

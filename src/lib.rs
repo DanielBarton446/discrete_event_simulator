@@ -32,3 +32,7 @@ pub mod environment {
     }
     pub mod environment;
 }
+
+pub mod genetic_learning {
+    pub mod evolution;
+}

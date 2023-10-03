@@ -12,12 +12,12 @@ pub struct UnloadPassengersEvent {
 
 #[derive(Deserialize, Serialize)]
 pub struct UnloadPassengersJson {
-    pub bus_uid: usize, // what else?
+    pub bus_uuid: String, // what else?
 }
 
 impl UnloadPassengersJson {
-    pub fn new(bus_uid: usize) -> Self {
-        Self { bus_uid }
+    pub fn new(bus_uuid: String) -> Self {
+        Self { bus_uuid }
     }
 }
 

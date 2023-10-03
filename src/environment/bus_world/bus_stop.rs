@@ -36,11 +36,11 @@ impl BusStop {
         self.buses_at_stop.push(bus);
     }
 
-    pub fn drain_bus(&mut self, bus_uid: usize) -> Bus {
+    pub fn drain_bus(&mut self, bus_uuid: String) -> Bus {
         let bus_index = self
             .buses_at_stop
             .iter()
-            .position(|b| b.uid == bus_uid)
+            .position(|b| b.uuid == bus_uuid)
             .unwrap();
         self.buses_at_stop.remove(bus_index)
     }
