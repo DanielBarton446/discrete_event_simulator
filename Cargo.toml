@@ -11,3 +11,4 @@ fake = "2.8.0"
 rand = "0.8.5"
 serde = {version = "1.0.188", features = ["derive"]}
 serde_json = "1.0.105"
+uuid = {version = "1.4.1", features = ["v4", "fast-rng", "macro-diagnostics"]}
