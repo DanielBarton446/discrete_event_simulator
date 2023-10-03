@@ -5,7 +5,7 @@ use discrete_event_simulator::{
         bus::Bus,
         bus_world_events::new_bus::{NewBusEvent, NewBusesJson},
     },
-    genetic_learning::bus_routing::evolution::{Evolution, Population},
+    genetic_learning::evolution::{Evolvable, Population},
     simulation::sim::Simulation,
 };
 
@@ -31,18 +31,25 @@ fn main() {
     println!("Create a bus world simulation!");
     let mut buses = Vec::new();
 
-    for i in 0..5 {
-        let mut bus = Bus::new(i, 5);
+    for _ in 0..5 {
+        let mut bus = Bus::new(5);
         for i in 0..5 {
             bus.add_serviced_stop("stop".to_string() + &i.to_string());
         }
         buses.push(bus);
     }
 
-    let population = Population::new(buses);
-    let mut evolution = Evolution::new(population);
-    evolution.evolve();
+    let mut population = Population::new(buses);
+    match population.evolve() {
+        Ok(_) => println!("Evolution successful!"),
+        Err(e) => println!("Evolution failed: {}", e),
+    }
+    println!("Population: {:#?}", population);
 
-    // let mut sim = Simulation::new(100, Box::new(env), init_event);
-    // sim.play_movie(100);
+    println!("Evolving 20 times because reasons");
+    for _ in 0..20 {
+        let _ = population.evolve();
+    }
+
+    println!("Population: {:#?}", population);
 }
