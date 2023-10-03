@@ -33,6 +33,12 @@ pub mod environment {
     pub mod environment;
 }
 
+/// Genetic learning module
+/// Contains the genetic learning algorithm
+/// and the traits that are needed to implement
+/// genetic learning for generic populations.
 pub mod genetic_learning {
+    /// Defines traits for generic evolution:
+    /// - TODO: add a description of how this generally is used
     pub mod evolution;
 }
