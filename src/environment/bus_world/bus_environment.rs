@@ -144,9 +144,9 @@ impl BusEnvironment {
             .find(|stop| stop.name == stop_name)
     }
 
-    fn find_mut_stop_by_bus_uid(&mut self, uid: usize) -> Option<&mut BusStop> {
+    fn find_mut_stop_by_bus_uuid(&mut self, uuid: String) -> Option<&mut BusStop> {
         for stop in self.bus_stops.iter_mut() {
-            let bus = stop.buses_at_stop.iter_mut().find(|bus| bus.uid == uid);
+            let bus = stop.buses_at_stop.iter_mut().find(|bus| bus.uuid == uuid);
             if bus.is_some() {
                 return Some(stop);
             }
@@ -154,16 +154,16 @@ impl BusEnvironment {
         return None;
     }
 
-    fn drain_bus_by_uid(&mut self, bus_uid: usize) -> Option<Bus> {
+    fn drain_bus_by_uuid(&mut self, bus_uuid: String) -> Option<Bus> {
         for stop in &mut self.bus_stops {
             if stop
                 .buses_at_stop
                 .iter()
-                .filter(|b| b.uid == bus_uid)
+                .filter(|b| b.uuid == bus_uuid)
                 .count()
                 > 0
             {
-                return Some(stop.drain_bus(bus_uid));
+                return Some(stop.drain_bus(bus_uuid));
             }
         }
         return None;
@@ -221,15 +221,15 @@ impl PassengerTransportHandler for BusEnvironment {
         stat_recorder: &mut Stats,
         event: Box<dyn Event>,
     ) {
-        let bus_uid = serde_json::from_str::<LoadPassengersJson>(&event.get_data().unwrap())
+        let bus_uuid = serde_json::from_str::<LoadPassengersJson>(&event.get_data().unwrap())
             .expect("Error: Could not deserialize bus mapping")
-            .bus_uid;
+            .bus_uuid;
         let passenger_pickup_delay = self.settings.pickup_delay;
-        let stop = self.find_mut_stop_by_bus_uid(bus_uid).unwrap();
+        let stop = self.find_mut_stop_by_bus_uuid(bus_uuid.clone()).unwrap();
         let bus_at_stop = stop
             .buses_at_stop
             .iter_mut()
-            .find(|b| b.uid == bus_uid)
+            .find(|b| b.uuid == bus_uuid)
             .unwrap(); // unwrap bad.
 
         let mut onboarded_passengers_count = 0;
@@ -247,7 +247,7 @@ impl PassengerTransportHandler for BusEnvironment {
 
         // Schedule advance to next stop if exists
         if let Some(next_stop) = bus_at_stop.get_next_stop() {
-            let advance_to_next_stop_data = BusToStopMappingJson::new(bus_uid, next_stop.clone());
+            let advance_to_next_stop_data = BusToStopMappingJson::new(bus_uuid, next_stop.clone());
             let advance_to_next_stop_event = Box::new(MoveBusToStopEvent::new(
                 event.get_uid() + 1,
                 event.get_time_stamp() + (onboarded_passengers_count * passenger_pickup_delay),
@@ -264,7 +264,7 @@ impl PassengerTransportHandler for BusEnvironment {
         );
         stat_recorder.add_statistic(
             data_point,
-            format!("Bus {}: Passengers Loaded", bus_at_stop.uid),
+            format!("Bus {}: Passengers Loaded", bus_at_stop.uuid),
         );
     }
 
@@ -274,15 +274,15 @@ impl PassengerTransportHandler for BusEnvironment {
         stat_recorder: &mut Stats,
         event: Box<dyn Event>,
     ) {
-        let bus_uid = serde_json::from_str::<LoadPassengersJson>(&event.get_data().unwrap())
+        let bus_uuid = serde_json::from_str::<LoadPassengersJson>(&event.get_data().unwrap())
             .expect("Error: Could not deserialize bus mapping")
-            .bus_uid;
+            .bus_uuid;
         let mut unloaded_passenger_count = 0;
-        if let Some(stop) = self.find_mut_stop_by_bus_uid(bus_uid) {
+        if let Some(stop) = self.find_mut_stop_by_bus_uuid(bus_uuid.clone()) {
             let bus_at_stop = stop
                 .buses_at_stop
                 .iter_mut()
-                .find(|b| b.uid == bus_uid)
+                .find(|b| b.uuid == bus_uuid)
                 .unwrap(); // unwrap bad.
             if let Some(passengers_getting_off) = bus_at_stop.passengers.get_mut(stop.name.as_str())
             {
@@ -291,7 +291,7 @@ impl PassengerTransportHandler for BusEnvironment {
             }
 
             // Schedule loading passengers after we unloaded passengers
-            let load_passengers_data = LoadPassengersJson::new(bus_uid);
+            let load_passengers_data = LoadPassengersJson::new(bus_uuid);
             let load_bus_event = Box::new(LoadPassengersEvent::new(
                 event.get_uid() + 1,
                 event.get_time_stamp() + (unloaded_passenger_count * 4),
@@ -307,7 +307,7 @@ impl PassengerTransportHandler for BusEnvironment {
             );
             stat_recorder.add_statistic(
                 data_point,
-                format!("Bus {}: Passengers Unloaded", bus_at_stop.uid),
+                format!("Bus {}: Passengers Unloaded", bus_at_stop.uuid),
             );
         }
     }
@@ -326,13 +326,13 @@ impl AdvanceVehicleHandler for BusEnvironment {
 
         // find and drain the bus we are looking for and do something with it later
         // unwrapping is bad
-        let mut bus = self.drain_bus_by_uid(bus_and_new_stop.bus_uid).unwrap();
+        let mut bus = self.drain_bus_by_uuid(bus_and_new_stop.bus_uuid).unwrap();
 
         // Advance the bus to the current stop(advanced by 1 stop)
         bus.advance_to_next_stop();
 
         // Schedule unloading passengers after we arrive at the next stop
-        let unload_passengers_data = UnloadPassengersJson::new(bus.uid);
+        let unload_passengers_data = UnloadPassengersJson::new(bus.uuid.clone());
         let unload_passengers_event = Box::new(UnloadPassengersEvent::new(
             event.get_uid() + 1,
             event.get_time_stamp() + self.settings.next_stop_delay,
@@ -369,25 +369,28 @@ impl NewVehicleHandler for BusEnvironment {
         let bus_mapping = serde_json::from_str::<NewBusesJson>(&event.get_data().unwrap())
             .expect("Error: Could not deserialize bus mapping");
 
-        for i in 0..bus_mapping.number_of_buses {
-            let mut bus = Bus::new(i, bus_mapping.capacity);
+        for _ in 0..bus_mapping.number_of_buses {
+            let mut bus = Bus::new(bus_mapping.capacity);
 
             for stop in &mut self.bus_stops {
                 bus.add_serviced_stop(stop.name.clone());
             }
 
             let _bus_routing = match bus.get_next_stop() {
-                Some(next_stop) => BusToStopMappingJson::new(bus.uid, next_stop.to_string()),
-                None => {
-                    BusToStopMappingJson::new(bus.uid, bus.get_current_stop().unwrap().to_string())
+                Some(next_stop) => {
+                    BusToStopMappingJson::new(bus.uuid.clone(), next_stop.to_string())
                 }
+                None => BusToStopMappingJson::new(
+                    bus.uuid.clone(),
+                    bus.get_current_stop().unwrap().to_string(),
+                ),
             };
 
             // Start the Unload -> Load -> Advance Bus cycle
             let schedule_load_passengers = Box::new(UnloadPassengersEvent::new(
                 event.get_uid() + 1,
                 event.get_time_stamp() + self.settings.initial_delay,
-                serde_json::to_string(&UnloadPassengersJson::new(bus.uid)).unwrap(),
+                serde_json::to_string(&UnloadPassengersJson::new(bus.uuid.clone())).unwrap(),
             ));
             scheduler.add_event(schedule_load_passengers);
 
