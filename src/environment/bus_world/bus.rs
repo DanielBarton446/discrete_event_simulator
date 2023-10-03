@@ -4,18 +4,17 @@ use std::{
 };
 
 use rand::{thread_rng, Rng};
-use serde::Serialize;
-use serde_json::json;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::{
     environment::bus_world::passenger::Passenger,
-    genetic_learning::bus_routing::evolution::{Dna, DnaString, Fitness, Reproductor},
+    genetic_learning::evolution::{Breedable, Dna, Fitness},
 };
 
-#[derive(Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Bus {
-    pub dna_type: String,
-    pub uid: usize,
+    pub uuid: String,
     pub passengers: HashMap<String, Vec<Passenger>>,
     pub serviced_stop_names: Vec<String>,
     current_stop: usize,
@@ -23,10 +22,9 @@ pub struct Bus {
 }
 
 impl Bus {
-    pub fn new(uid: usize, capacity: usize) -> Bus {
+    pub fn new(capacity: usize) -> Bus {
         Bus {
-            dna_type: String::from("bus"),
-            uid,
+            uuid: Uuid::new_v4().to_string(),
             passengers: HashMap::new(),
             serviced_stop_names: Vec::new(),
             current_stop: 0,
@@ -72,43 +70,46 @@ impl Bus {
     }
 }
 
-impl<T> Reproductor<T> for Bus {
-    fn reproduce(&self, second: &serde_json::Value) -> Result<Bus, String> {
-        let binding = self.get_dna();
-        let self_dna_type = binding.get("dna_type");
-        let second_dna_type = second.get("dna_type");
-
-        if self_dna_type.is_none() {
-            return Err(format!("Self DNA type is None. UID: {}", self.uid));
+impl<T> Breedable<T> for Bus
+where
+    T: Dna,
+{
+    fn reproduce(&self, other: &Bus) -> Result<Bus, String> {
+        let larger_capacity = if self.capacity > other.capacity {
+            self.capacity
+        } else {
+            other.capacity
+        };
+        let mut child = Bus::new(larger_capacity);
+        let rng = &mut thread_rng();
+        // Get the bus which has more stops serviced
+        let mut longer = &self.serviced_stop_names;
+        let mut shorter = &other.serviced_stop_names;
+        if other.serviced_stop_names.len() > longer.len() {
+            longer = &other.serviced_stop_names;
+            shorter = &self.serviced_stop_names;
         }
 
-        if second_dna_type.is_none() {
-            return Err(format!("Second DNA type is None. UID: {}", self.uid));
-        }
-
-        if let Some(dna_type) = self_dna_type {
-            if dna_type != "bus" {
-                return Err(format!(
-                    "Self not the right DNA type for buses {}. UID: {}",
-                    dna_type, self.uid
-                ));
+        for stop in longer {
+            #[allow(clippy::if_same_then_else)] // clippy doesn't realize % chance in else clause
+            if shorter.contains(stop) {
+                child.add_serviced_stop(stop.to_string());
+            }
+            // Give us a chance to add it if its not in both parents anyways
+            else if rng.gen_bool(0.5) {
+                child.add_serviced_stop(stop.to_string());
             }
         }
+        Ok(child)
+    }
 
-        if self_dna_type != second_dna_type {
-            return Err(format!(
-                "Cannot reproduce between different types of DNA: {} and {}",
-                self_dna_type.unwrap(),
-                second_dna_type.unwrap()
-            ));
-        }
-
-        // println!("{}", self_dna_type.unwrap());
-        let mut bus = Bus::new(69, 100);
+    fn mutate(&mut self) {
+        // we gonna remove a stop
         let rng = &mut thread_rng();
-        let stop = &self.serviced_stop_names[rng.gen_range(0..self.serviced_stop_names.len())];
-        bus.add_serviced_stop(stop.to_string());
-        return Ok(bus);
+        let stop =
+            self.serviced_stop_names[rng.gen_range(0..self.serviced_stop_names.len())].clone();
+        self.remove_services_stop(stop)
+            .expect("Error removing stop. This should never happen");
     }
 }
 
@@ -126,16 +127,19 @@ impl Dna for Bus {
             Err(e) => panic!("Error serializing bus: {}", e),
         }
     }
+    fn get_species(&self) -> &'static str {
+        "bus"
+    }
 }
 
 impl<F> Fitness<F> for Bus {
     fn evaluate_fitness(&self) -> f32 {
-        0.0
+        10.0
     }
 }
 
 impl Display for Bus {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
-        write!(f, "[Bus {}]", self.uid,)
+        write!(f, "[Bus {}]", self.uuid)
     }
 }

@@ -2,9 +2,9 @@ use std::fmt::{Display, Error, Formatter};
 
 use fake::{faker::name::en::Name, Fake};
 use rand::{seq::SliceRandom, Rng};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Passenger {
     pub uid: usize,
     pub name: String,
