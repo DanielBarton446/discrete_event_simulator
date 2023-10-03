@@ -41,12 +41,22 @@ impl FromStr for BusEventTypes {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Copy, Clone)]
 pub struct BusEnvironmentSettings {
     pickup_delay: usize,
     drop_off_delay: usize,
     next_stop_delay: usize,
     initial_delay: usize,
+}
+
+impl Display for BusEnvironmentSettings {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        write!(
+            f,
+            "pickup_delay: {}, drop_off_delay: {}, next_stop_delay: {}, initial_delay: {}",
+            self.pickup_delay, self.drop_off_delay, self.next_stop_delay, self.initial_delay
+        )
+    }
 }
 
 impl BusEnvironmentSettings {

@@ -26,6 +26,11 @@ impl Stats {
             self.all_series.push(new_series);
         }
     }
+    pub fn get_series_by_name(&self, label: String) -> Option<&TimeSeries> {
+        self.all_series
+            .iter()
+            .find(|series| series.statistic_label == label)
+    }
 }
 
 #[cfg(test)]
