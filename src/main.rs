@@ -1,60 +1,42 @@
 use discrete_event_simulator::{
     environment::bus_world::bus_environment::BusEnvironment,
     environment::bus_world::bus_environment::BusEnvironmentSettings,
-    environment::bus_world::{
-        bus::Bus,
-        bus_world_events::{
-            import_bus::ImportBusEvent,
-            new_bus::{NewBusEvent, NewBusesJson},
-        },
-    },
+    environment::bus_world::{bus::Bus, bus_world_events::import_bus::ImportBusEvent},
     genetic_learning::evolution::{Evolvable, Population},
     simulation::sim::Simulation,
 };
 
-// fn main() {
-//     println!("Create a bus world simulation!");
-//     let mut env = BusEnvironment::new(BusEnvironmentSettings::default());
-//     let buses = NewBusesJson::new(5, 5);
-//     let init_event = Box::new(NewBusEvent::new(
-//         0,
-//         0,
-//         serde_json::to_string(&buses).unwrap(),
-//     ));
-//
-//     env.create_bus_stops(5);
-//     env.initialize_bus_stops_with_passengers(100);
-//
-//     let mut sim = Simulation::new(100, Box::new(env), init_event);
-//     sim.play_movie(100);
-//     // sim.run();
-// }
-
-fn main() {
-    println!("Create a bus world simulation!");
-    let mut buses = Vec::new();
-
+fn new_basic_bus_sim_m_stops(runtime: usize, buses: &mut Vec<Bus>, num_stops: usize) -> Simulation {
     let mut env = BusEnvironment::new(BusEnvironmentSettings::default());
-    env.create_bus_stops(5);
+    env.create_bus_stops(num_stops);
     env.initialize_bus_stops_with_passengers(100);
 
-    for _ in 0..5 {
-        let mut bus = Bus::new(5);
-        for i in 0..5 {
-            bus.add_serviced_stop(env.bus_stops[i].name.clone());
+    for bus in buses.iter_mut() {
+        for stop in env.bus_stops.iter() {
+            bus.add_serviced_stop(stop.name.clone());
         }
-        buses.push(bus);
     }
 
-    let sim1_init_event = Box::new(ImportBusEvent::new(
+    let sim_init_event = Box::new(ImportBusEvent::new(
         0,
         0,
         serde_json::to_string(&buses).unwrap(),
     ));
-    let mut sim = Simulation::new(100, Box::new(env), sim1_init_event);
-    // sim.play_movie(100);
-    sim.run();
+    Simulation::new(runtime, Box::new(env), sim_init_event)
+}
 
+fn create_n_buses(n: usize) -> Vec<Bus> {
+    let mut buses = Vec::new();
+
+    for _ in 0..n {
+        let bus = Bus::new(5);
+        buses.push(bus);
+    }
+
+    buses
+}
+
+fn display_wait_time(sim: &Simulation) {
     let wait_time = match sim
         .statistics
         .get_series_by_name("Total Passenger Wait Time".to_string())
@@ -64,38 +46,32 @@ fn main() {
     };
 
     println!("{}", wait_time);
+}
 
-    let mut population = Population::new(buses.clone());
-    match population.evolve() {
-        Ok(_) => println!("Evolution successful!"),
-        Err(e) => println!("Evolution failed: {}", e),
+fn evolve_buses_n_times(buses: &[Bus], n: usize) -> Population<Bus> {
+    let mut population = Population::new(buses.to_vec());
+
+    for _ in 0..n {
+        match population.evolve() {
+            Ok(_) => (),
+            Err(e) => panic!("Error: {}", e),
+        }
     }
+    population
+}
 
-    println!("Evolving 20 times because reasons");
-    for _ in 0..20 {
-        let _ = population.evolve();
-    }
+fn main() {
+    println!("Create a bus world simulation!");
+    let mut buses = create_n_buses(5);
 
-    let mut env2 = BusEnvironment::new(BusEnvironmentSettings::default());
-    env2.create_bus_stops(5);
-    env2.initialize_bus_stops_with_passengers(100);
+    let mut sim = new_basic_bus_sim_m_stops(100, &mut buses, 10);
+    // sim.play_movie(100);
+    sim.run();
+    display_wait_time(&sim);
 
-    let sim2_init_event = Box::new(ImportBusEvent::new(
-        0,
-        0,
-        serde_json::to_string(&buses).unwrap(),
-    ));
-    let mut sim2 = Simulation::new(100, Box::new(env2), sim2_init_event);
+    let population = evolve_buses_n_times(&buses, 20);
+    let mut sim2 = new_basic_bus_sim_m_stops(100, &mut population.populace.clone(), 10);
     // sim2.play_movie(100);
     sim2.run();
-
-    let wait_time = match sim2
-        .statistics
-        .get_series_by_name("Total Passenger Wait Time".to_string())
-    {
-        Some(series) => series,
-        None => panic!("No series found"),
-    };
-
-    println!("{}", wait_time);
+    display_wait_time(&sim2);
 }
