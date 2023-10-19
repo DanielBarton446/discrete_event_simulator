@@ -113,6 +113,10 @@ where
     }
 
     fn mutate(&mut self) {
+        if self.serviced_stop_names.len() <= 2 {
+            // cannot be a bus route if we only have 2 stops
+            return;
+        }
         // we gonna remove a stop
         let rng = &mut thread_rng();
         let stop =
