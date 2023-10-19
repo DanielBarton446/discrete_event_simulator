@@ -21,6 +21,7 @@ use super::passenger::Passenger;
 use serde::Serialize;
 
 enum BusEventTypes {
+    ImportBus,
     NewBus,
     MoveBusToStop,
     LoadPassengers,
@@ -376,6 +377,39 @@ impl NewVehicleHandler for BusEnvironment {
                 bus.add_serviced_stop(stop.name.clone());
             }
 
+            let _bus_routing = match bus.get_next_stop() {
+                Some(next_stop) => {
+                    BusToStopMappingJson::new(bus.uuid.clone(), next_stop.to_string())
+                }
+                None => BusToStopMappingJson::new(
+                    bus.uuid.clone(),
+                    bus.get_current_stop().unwrap().to_string(),
+                ),
+            };
+
+            // Start the Unload -> Load -> Advance Bus cycle
+            let schedule_load_passengers = Box::new(UnloadPassengersEvent::new(
+                event.get_uid() + 1,
+                event.get_time_stamp() + self.settings.initial_delay,
+                serde_json::to_string(&UnloadPassengersJson::new(bus.uuid.clone())).unwrap(),
+            ));
+            scheduler.add_event(schedule_load_passengers);
+
+            // Add bus to the stop
+            self.bus_stops[0].add_bus(bus);
+        }
+    }
+
+    fn import_buses(
+        &mut self,
+        scheduler: &mut Scheduler,
+        _stat_recorder: &mut Stats,
+        event: Box<dyn Event>,
+    ) {
+        let imported_buses = serde_json::from_str::<Vec<Bus>>(&event.get_data().unwrap())
+            .expect("Error: Could not deserialize imported buses");
+
+        for bus in imported_buses {
             let _bus_routing = match bus.get_next_stop() {
                 Some(next_stop) => {
                     BusToStopMappingJson::new(bus.uuid.clone(), next_stop.to_string())
