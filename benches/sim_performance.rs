@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
 use discrete_event_simulator::{
     environment::bus_world::{

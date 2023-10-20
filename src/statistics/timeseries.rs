@@ -26,6 +26,13 @@ impl TimeSeries {
         }
         self.series.insert(data_point.timestamp, data_point.value);
     }
+
+    pub(crate) fn get_last_value(&self) -> f64 {
+        match self.series.iter().last() {
+            Some((_, value)) => *value,
+            None => panic!("No data points in series"),
+        }
+    }
 }
 
 impl Display for TimeSeries {
