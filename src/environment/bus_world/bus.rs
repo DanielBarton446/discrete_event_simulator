@@ -49,10 +49,13 @@ impl Bus {
     }
 
     pub fn add_serviced_stop(&mut self, stop: String) {
+        if self.serviced_stop_names.contains(&stop) {
+            return;
+        }
         self.serviced_stop_names.push(stop);
     }
 
-    pub fn remove_services_stop(&mut self, stop: String) -> Result<(), String> {
+    pub fn remove_serviced_stop(&mut self, stop: String) -> Result<(), String> {
         let index = self
             .serviced_stop_names
             .iter()
@@ -109,6 +112,12 @@ where
                 child.add_serviced_stop(stop.to_string());
             }
         }
+        while child.serviced_stop_names.len() < 2 {
+            // cannot be a bus route if we have less than 2 stops,
+            // grab the bus with more serviced routes and just add random stops
+            let stop = longer[rng.gen_range(0..longer.len())].clone();
+            child.add_serviced_stop(stop);
+        }
         Ok(child)
     }
 
@@ -121,7 +130,7 @@ where
         let rng = &mut thread_rng();
         let stop =
             self.serviced_stop_names[rng.gen_range(0..self.serviced_stop_names.len())].clone();
-        self.remove_services_stop(stop)
+        self.remove_serviced_stop(stop)
             .expect("Error removing stop. This should never happen");
     }
 }

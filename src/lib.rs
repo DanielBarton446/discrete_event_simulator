@@ -1,4 +1,4 @@
-mod statistics {
+pub mod statistics {
     pub mod data_point;
     pub mod stats;
     mod timeseries;
@@ -41,6 +41,7 @@ pub mod environment {
 /// and the traits that are needed to implement
 /// genetic learning for generic populations.
 pub mod genetic_learning {
+    pub mod charting;
     /// Defines traits for generic evolution:
     /// - TODO: add a description of how this generally is used
     pub mod evolution;

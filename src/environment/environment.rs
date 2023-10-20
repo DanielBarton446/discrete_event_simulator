@@ -10,5 +10,5 @@ pub trait Environment: Display {
         event: Box<dyn Event>,
     );
     fn get_state(&self) -> String;
-    fn terminating_event(&self) -> Box<dyn Event>;
+    fn terminating_event(&self, scheduler: &mut Scheduler) -> Box<dyn Event>;
 }

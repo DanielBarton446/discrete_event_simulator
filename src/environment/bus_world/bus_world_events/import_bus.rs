@@ -9,6 +9,12 @@ pub struct ImportBusesJson {
     pub buses: Vec<Bus>,
 }
 
+impl ImportBusesJson {
+    pub fn new(buses: Vec<Bus>) -> Self {
+        Self { buses }
+    }
+}
+
 impl<'de> Deserialize<'de> for ImportBusesJson {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

@@ -8,21 +8,27 @@ use super::{
     bus_world_events::import_bus::ImportBusEvent,
 };
 
-pub fn new_basic_bus_sim_m_stops(
-    runtime: usize,
-    buses: &mut Vec<Bus>,
+pub fn create_bus_env(
     num_stops: usize,
-) -> Simulation {
-    let mut env = BusEnvironment::new(BusEnvironmentSettings::default());
+    num_pass: usize,
+    bus_env_settings: BusEnvironmentSettings,
+) -> BusEnvironment {
+    let mut env = BusEnvironment::new(bus_env_settings);
     env.create_bus_stops(num_stops);
-    env.initialize_bus_stops_with_passengers(100);
+    env.initialize_bus_stops_with_passengers(num_pass);
+    env
+}
 
+pub fn add_bus_stops_from_env_to_buses(buses: &mut [Bus], env: &BusEnvironment) {
     for bus in buses.iter_mut() {
         for stop in env.bus_stops.iter() {
             bus.add_serviced_stop(stop.name.clone());
         }
     }
+}
 
+pub fn new_sim(runtime: usize, buses: &mut Vec<Bus>, env: BusEnvironment) -> Simulation {
+    // println!("README: {:?}", buses);
     let sim_init_event = Box::new(ImportBusEvent::new(
         0,
         0,

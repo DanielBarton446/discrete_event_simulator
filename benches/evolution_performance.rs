@@ -4,12 +4,13 @@ use std::{
 };
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use discrete_event_simulator::environment::bus_world::{
-    bus::Bus,
-    bus_environment::BusEnvironmentSettings,
-    utils::{
-        create_n_buses_m_capacity, evolve_buses_n_times, get_wait_time, new_basic_bus_sim_m_stops,
+use discrete_event_simulator::{
+    environment::bus_world::{
+        bus::Bus,
+        bus_environment::BusEnvironmentSettings,
+        utils::{create_n_buses_m_capacity, evolve_buses_n_times, get_wait_time, new_sim},
     },
+    genetic_learning::charting::draw_data,
 };
 
 #[derive(Copy, Clone)]
@@ -54,13 +55,14 @@ impl Display for Configuration {
 
 fn evolve_then_run(config: &Configuration, buses: &[Bus], evolutions: usize) -> f64 {
     let population = evolve_buses_n_times(buses, evolutions);
-    let mut sim = new_basic_bus_sim_m_stops(
-        config.runtime,
-        &mut population.populace.clone(),
-        config.bus_stops,
-    );
-    sim.run();
-    get_wait_time(&sim)
+    // let mut sim = new_basic_bus_sim_m_stops(
+    //     config.runtime,
+    //     &mut population.populace.clone(),
+    //     config.bus_stops,
+    // );
+    // sim.run();
+    // get_wait_time(&sim)
+    0.0
 }
 
 fn run_sim_with_n_evolutions(c: &mut Criterion) {
@@ -115,59 +117,8 @@ fn run_sim_with_n_evolutions(c: &mut Criterion) {
         .iter()
         .map(|(evolutions, average)| (*evolutions as f64, *average))
         .collect::<Vec<(f64, f64)>>();
-    draw_data(data).unwrap();
+    draw_data("BenchmarkPerformance".to_string(), data, (1920, 1080)).unwrap();
     println!("Averages: {:?}", sorted_averages);
-}
-
-use plotters::prelude::*;
-
-fn draw_data(data: Vec<(f64, f64)>) -> Result<(), Box<dyn std::error::Error>> {
-    // Create a drawing area
-    let root = BitMapBackend::new("my_chart.png", (1920, 1080)).into_drawing_area();
-    root.fill(&WHITE)?;
-
-    let minx = data
-        .iter()
-        .map(|(x, _)| *x)
-        .min_by(|a, b| a.partial_cmp(b).unwrap())
-        .unwrap();
-    let maxx = data
-        .iter()
-        .map(|(x, _)| *x)
-        .max_by(|a, b| a.partial_cmp(b).unwrap())
-        .unwrap();
-    let miny = data
-        .iter()
-        .map(|(_, y)| *y)
-        .min_by(|a, b| a.partial_cmp(b).unwrap())
-        .unwrap();
-    let maxy = data
-        .iter()
-        .map(|(_, y)| *y)
-        .max_by(|a, b| a.partial_cmp(b).unwrap())
-        .unwrap();
-
-    // Create a chart context
-    let mut chart = ChartBuilder::on(&root)
-        .caption("Wait Time By Evolution Count", ("serif", 40).into_font())
-        .margin(5)
-        .x_label_area_size(30)
-        .y_label_area_size(100)
-        .build_cartesian_2d(minx..maxx, miny..maxy)?;
-
-    chart
-        .configure_mesh()
-        .x_desc("Evolutions")
-        .y_desc("Wait Time")
-        .draw()?;
-
-    // ensure data is sorted by x value
-    let mut data = data;
-    data.sort_by(|(x1, _), (x2, _)| x1.partial_cmp(x2).unwrap());
-    // Draw the line chart
-    chart.draw_series(LineSeries::new(data, &RED))?;
-
-    Ok(())
 }
 
 criterion_group!(benches, run_sim_with_n_evolutions);

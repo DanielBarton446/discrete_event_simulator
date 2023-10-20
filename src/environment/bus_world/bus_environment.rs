@@ -82,17 +82,23 @@ impl BusEnvironmentSettings {
 }
 
 impl Default for BusEnvironmentSettings {
+    /// Settings are in Seconds
+    /// Default Settings are:
+    /// * `pickup_delay`: 60,
+    /// * `drop_off_delay`: 30,
+    /// * `next_stop_delay`: 1200,
+    /// * `initial_delay`: 600,
     fn default() -> Self {
         BusEnvironmentSettings {
-            pickup_delay: 1,
-            drop_off_delay: 2,
-            next_stop_delay: 5,
-            initial_delay: 10,
+            pickup_delay: 60,
+            drop_off_delay: 30,
+            next_stop_delay: 600,
+            initial_delay: 600,
         }
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct BusEnvironment {
     pub bus_stops: Vec<BusStop>,
     settings: BusEnvironmentSettings,
@@ -115,6 +121,8 @@ impl BusEnvironment {
         }
     }
 
+    /// Create and Distribute `count` passengers among all bus stops
+    /// * `count` - the number of passengers to create
     pub fn initialize_bus_stops_with_passengers(&mut self, count: usize) {
         if self.bus_stops.is_empty() {
             panic!("Error: No bus stops exist");
@@ -175,26 +183,82 @@ impl BusEnvironment {
         return None;
     }
 
-    pub fn record_total_wait_time(&self, timestamp: usize, stat_recorder: &mut Stats) {
-        let mut total_wait_time: usize = self.bus_stops.iter().fold(0, |acc, stop| {
+    fn completed_passengers_wait_time(&self, timestamp: usize, stat_recorder: &mut Stats) -> usize {
+        // wait time of completed passengers
+        let completed_passengers_wait = self.bus_stops.iter().fold(0, |acc, stop| {
             acc + stop
                 .completed_passengers
                 .iter()
-                .fold(0, |acc, passenger| acc + passenger.wait_time as usize)
+                .fold(0, |cum, passenger| cum + passenger.wait_time as usize)
         });
+        let num_completed = self
+            .bus_stops
+            .iter()
+            .fold(0, |acc, stop| acc + stop.completed_passengers.len());
+        stat_recorder.add_statistic(
+            DataPoint::new(timestamp, num_completed as f64, "count".to_string()),
+            "Completed Passengers".to_string(),
+        );
 
+        completed_passengers_wait
+    }
+
+    fn pending_passengers_wait_time(&self, timestamp: usize, stat_recorder: &mut Stats) -> usize {
+        // Wait time of passengers still on buses
+        let mut pending_passengers = 0;
+        let mut pending_wait_time = 0;
         for stop in &self.bus_stops {
             for bus in &stop.buses_at_stop {
-                total_wait_time += bus.passengers.values().fold(0, |acc, passengers| {
+                // println!("Bus: {}", bus.uuid);
+                // println!("Passengers: {:?}", bus.passengers);
+                pending_passengers += bus
+                    .passengers
+                    .values()
+                    .fold(0, |acc, passengers| acc + passengers.len());
+
+                pending_wait_time += bus.passengers.values().fold(0, |acc, passengers| {
                     acc + passengers
                         .iter()
-                        .fold(0, |acc, passenger| acc + passenger.wait_time as usize)
+                        .fold(0, |cum, passenger| cum + passenger.wait_time as usize)
                 });
             }
         }
+        stat_recorder.add_statistic(
+            DataPoint::new(timestamp, pending_passengers as f64, "count".to_string()),
+            "Pending Passengers".to_string(),
+        );
+        pending_wait_time
+    }
+
+    fn forgotten_passengers_wait_time(&self, timestamp: usize, stat_recorder: &mut Stats) -> usize {
+        // wait time of passengers who have not got on buses yet
+        let mut forgotten_passengers = 0;
+        let mut forgotten_passenger_wait_time = 0;
+        for stop in &self.bus_stops {
+            for passengers in stop.waiting_passengers.values() {
+                forgotten_passenger_wait_time += passengers.len() * timestamp;
+                forgotten_passengers += passengers.len();
+            }
+        }
+        stat_recorder.add_statistic(
+            DataPoint::new(timestamp, forgotten_passengers as f64, "count".to_string()),
+            "Forgotten Passengers".to_string(),
+        );
+        forgotten_passenger_wait_time
+    }
+
+    pub fn record_total_wait_time(&self, timestamp: usize, stat_recorder: &mut Stats) {
+        let mut total_wait_time = 0;
+        // let completed_passengers_wait =
+        //     self.completed_passengers_wait_time(timestamp, stat_recorder);
+        let pending_passengers_wait = self.pending_passengers_wait_time(timestamp, stat_recorder);
+        let forgotten_passengers = self.forgotten_passengers_wait_time(timestamp, stat_recorder);
+        // total_wait_time +=
+        //     completed_passengers_wait + pending_passengers_wait + forgotten_passengers;
+        total_wait_time += pending_passengers_wait + forgotten_passengers;
 
         stat_recorder.add_statistic(
-            DataPoint::new(timestamp, total_wait_time as f64, "ms".to_string()),
+            DataPoint::new(timestamp, total_wait_time as f64, "seconds".to_string()),
             "Total Passenger Wait Time".to_string(),
         );
     }
@@ -210,12 +274,7 @@ impl BusEnvironment {
                 }
             }
         }
-        // empty the buses
-        for stop in &mut self.bus_stops {
-            for bus in &mut stop.buses_at_stop {
-                bus.reset();
-            }
-        }
+
         self.record_total_wait_time(timestamp, stat_recorder);
     }
 }
@@ -258,19 +317,18 @@ impl Environment for BusEnvironment {
         }
     }
     fn get_state(&self) -> String {
-        // let mut number_of_buses = 0;
-        // for bus_stop in &self.bus_stops {
-        //     number_of_buses += bus_stop.buses_at_stop.len();
-        // }
-        // format!("Number of buses: {}", number_of_buses)
         if let Ok(serialized) = serde_json::to_string(&self.bus_stops) {
             return serialized;
         }
-        return String::new();
+        String::new()
     }
 
-    fn terminating_event(&self) -> Box<dyn Event> {
-        Box::new(TerminalEvent::new(0, 0, String::new()))
+    fn terminating_event(&self, scheduler: &mut Scheduler) -> Box<dyn Event> {
+        Box::new(TerminalEvent::new(
+            usize::MAX,
+            scheduler.runtime,
+            String::new(),
+        ))
     }
 }
 
@@ -350,7 +408,17 @@ impl PassengerTransportHandler for BusEnvironment {
                 for p in passengers_getting_off.iter_mut() {
                     p.wait_time += event.get_time_stamp() as u32;
                 }
+                // println!(
+                //     "Bus: {} | Unloading {} passengers",
+                //     bus_at_stop.uuid,
+                //     passengers_getting_off.len()
+                // );
                 stop.completed_passengers.append(passengers_getting_off);
+                // println!(
+                //     "Stop: {} | Completed Passengers: {}",
+                //     stop.name,
+                //     stop.completed_passengers.len()
+                // );
             }
 
             // Schedule loading passengers after we unloaded passengers
@@ -479,7 +547,12 @@ impl NewVehicleHandler for BusEnvironment {
                 }
                 None => BusToStopMappingJson::new(
                     bus.uuid.clone(),
-                    bus.get_current_stop().unwrap().to_string(),
+                    match bus.get_current_stop() {
+                        Some(stop) => stop.to_string(),
+                        None => {
+                            panic!("Error: Serviced Stops: {:?}", bus.serviced_stop_names)
+                        }
+                    },
                 ),
             };
 
@@ -491,8 +564,13 @@ impl NewVehicleHandler for BusEnvironment {
             ));
             scheduler.add_event(schedule_load_passengers);
 
-            // Add bus to the stop
-            self.bus_stops[0].add_bus(bus);
+            // Add bus to the stop, based on what the bus' current stop
+            self.bus_stops
+                .iter_mut()
+                .find(|stop| stop.name == *bus.get_current_stop().unwrap())
+                .unwrap()
+                .add_bus(bus);
+            // self.bus_stops[0].add_bus(bus);
         }
     }
 }

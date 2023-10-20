@@ -186,6 +186,7 @@ where
             match child {
                 Ok(mut child) => {
                     if rng.gen_range(0..100) < 10 {
+                        // println!("Mutating child");
                         child.mutate();
                     }
                     new_pop.push(child);

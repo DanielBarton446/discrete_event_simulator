@@ -28,12 +28,13 @@ impl Simulation {
             statistics: Stats::new(),
         };
         sim.scheduler.add_event(initial_event);
-        return sim;
+        sim
     }
 
     fn terminal_event(&mut self) {
-        self.scheduler
-            .add_event(self.environment.terminating_event());
+        let completion_event = self.environment.terminating_event(&mut self.scheduler);
+        self.scheduler.add_event(completion_event);
+
         let last_event = self.scheduler.next_event().unwrap();
         self.environment
             .apply_event(&mut self.scheduler, &mut self.statistics, last_event);
