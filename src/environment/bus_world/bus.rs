@@ -11,10 +11,13 @@ use crate::{
     environment::bus_world::passenger::Passenger,
     genetic_learning::evolution::{Breedable, Dna, Fitness},
 };
+use serde_with::serde_as;
 
+#[serde_as]
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Bus {
     pub uuid: String,
+    #[serde_as(as = "Vec<(_, _)>")]
     pub passengers: HashMap<String, Vec<Passenger>>,
     pub serviced_stop_names: Vec<String>,
     current_stop: usize,
@@ -32,10 +35,16 @@ impl Bus {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.passengers.clear();
+        self.serviced_stop_names.clear();
+        self.current_stop = 0;
+    }
+
     pub fn add_passenger(&mut self, passenger: Passenger) {
         self.passengers
             .entry(passenger.destination.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(passenger);
     }
 

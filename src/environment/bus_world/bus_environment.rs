@@ -14,13 +14,17 @@ use crate::event::event::Event;
 use crate::statistics::data_point::DataPoint;
 use crate::statistics::stats::Stats;
 
+use super::bus_world_events::import_bus::ImportBusesJson;
 use super::bus_world_events::move_bus_to_stop::BusToStopMappingJson;
+use super::bus_world_events::terminal_event::TerminalEvent;
 use super::bus_world_events::unload_passengers::{UnloadPassengersEvent, UnloadPassengersJson};
 use super::passenger::Passenger;
 
 use serde::Serialize;
 
 enum BusEventTypes {
+    TerminalEvent,
+    ImportBus,
     NewBus,
     MoveBusToStop,
     LoadPassengers,
@@ -32,6 +36,8 @@ impl FromStr for BusEventTypes {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "Terminal" => Ok(BusEventTypes::TerminalEvent),
+            "ImportBus" => Ok(BusEventTypes::ImportBus),
             "NewBus" => Ok(BusEventTypes::NewBus),
             "MoveBusToStop" => Ok(BusEventTypes::MoveBusToStop),
             "LoadPassengers" => Ok(BusEventTypes::LoadPassengers),
@@ -88,7 +94,7 @@ impl Default for BusEnvironmentSettings {
 
 #[derive(Serialize)]
 pub struct BusEnvironment {
-    bus_stops: Vec<BusStop>,
+    pub bus_stops: Vec<BusStop>,
     settings: BusEnvironmentSettings,
 }
 
@@ -168,6 +174,50 @@ impl BusEnvironment {
         }
         return None;
     }
+
+    pub fn record_total_wait_time(&self, timestamp: usize, stat_recorder: &mut Stats) {
+        let mut total_wait_time: usize = self.bus_stops.iter().fold(0, |acc, stop| {
+            acc + stop
+                .completed_passengers
+                .iter()
+                .fold(0, |acc, passenger| acc + passenger.wait_time as usize)
+        });
+
+        for stop in &self.bus_stops {
+            for bus in &stop.buses_at_stop {
+                total_wait_time += bus.passengers.values().fold(0, |acc, passengers| {
+                    acc + passengers
+                        .iter()
+                        .fold(0, |acc, passenger| acc + passenger.wait_time as usize)
+                });
+            }
+        }
+
+        stat_recorder.add_statistic(
+            DataPoint::new(timestamp, total_wait_time as f64, "ms".to_string()),
+            "Total Passenger Wait Time".to_string(),
+        );
+    }
+
+    fn terminate_bus_sim(&mut self, stat_recorder: &mut Stats, event: Box<dyn Event>) {
+        let timestamp = event.get_time_stamp();
+        for stop in &mut self.bus_stops {
+            for bus in &mut stop.buses_at_stop {
+                for bus_load in bus.passengers.values_mut() {
+                    for passenger in bus_load.iter_mut() {
+                        passenger.wait_time += timestamp as u32;
+                    }
+                }
+            }
+        }
+        // empty the buses
+        for stop in &mut self.bus_stops {
+            for bus in &mut stop.buses_at_stop {
+                bus.reset();
+            }
+        }
+        self.record_total_wait_time(timestamp, stat_recorder);
+    }
 }
 
 impl Default for BusEnvironment {
@@ -184,6 +234,12 @@ impl Environment for BusEnvironment {
         event: Box<dyn Event>,
     ) {
         match BusEventTypes::from_str(event.get_event_type()) {
+            Ok(BusEventTypes::TerminalEvent) => {
+                self.terminate_bus_sim(stat_recorder, event);
+            }
+            Ok(BusEventTypes::ImportBus) => {
+                self.import_buses(scheduler, stat_recorder, event);
+            }
             Ok(BusEventTypes::NewBus) => {
                 self.create_new_bus(scheduler, stat_recorder, event);
             }
@@ -211,6 +267,10 @@ impl Environment for BusEnvironment {
             return serialized;
         }
         return String::new();
+    }
+
+    fn terminating_event(&self) -> Box<dyn Event> {
+        Box::new(TerminalEvent::new(0, 0, String::new()))
     }
 }
 
@@ -287,6 +347,9 @@ impl PassengerTransportHandler for BusEnvironment {
             if let Some(passengers_getting_off) = bus_at_stop.passengers.get_mut(stop.name.as_str())
             {
                 unloaded_passenger_count = passengers_getting_off.len();
+                for p in passengers_getting_off.iter_mut() {
+                    p.wait_time += event.get_time_stamp() as u32;
+                }
                 stop.completed_passengers.append(passengers_getting_off);
             }
 
@@ -342,9 +405,10 @@ impl AdvanceVehicleHandler for BusEnvironment {
 
         // find the stop we are looking for and add the bus to it
         // unwrapping is bad
-        let stop = self
-            .find_mut_stop_by_name(&bus_and_new_stop.stop_name)
-            .unwrap();
+        let stop = match self.find_mut_stop_by_name(&bus_and_new_stop.stop_name) {
+            Some(stop) => stop,
+            None => panic!("Error: Stop {} not found", bus_and_new_stop.stop_name),
+        };
 
         // Finally, add the bus to the current stop.
         stop.add_bus(bus);
@@ -376,6 +440,39 @@ impl NewVehicleHandler for BusEnvironment {
                 bus.add_serviced_stop(stop.name.clone());
             }
 
+            let _bus_routing = match bus.get_next_stop() {
+                Some(next_stop) => {
+                    BusToStopMappingJson::new(bus.uuid.clone(), next_stop.to_string())
+                }
+                None => BusToStopMappingJson::new(
+                    bus.uuid.clone(),
+                    bus.get_current_stop().unwrap().to_string(),
+                ),
+            };
+
+            // Start the Unload -> Load -> Advance Bus cycle
+            let schedule_load_passengers = Box::new(UnloadPassengersEvent::new(
+                event.get_uid() + 1,
+                event.get_time_stamp() + self.settings.initial_delay,
+                serde_json::to_string(&UnloadPassengersJson::new(bus.uuid.clone())).unwrap(),
+            ));
+            scheduler.add_event(schedule_load_passengers);
+
+            // Add bus to the stop
+            self.bus_stops[0].add_bus(bus);
+        }
+    }
+
+    fn import_buses(
+        &mut self,
+        scheduler: &mut Scheduler,
+        _stat_recorder: &mut Stats,
+        event: Box<dyn Event>,
+    ) {
+        let imported_buses = serde_json::from_str::<ImportBusesJson>(&event.get_data().unwrap())
+            .expect("Error: Could not deserialize imported buses");
+
+        for bus in imported_buses.buses {
             let _bus_routing = match bus.get_next_stop() {
                 Some(next_stop) => {
                     BusToStopMappingJson::new(bus.uuid.clone(), next_stop.to_string())

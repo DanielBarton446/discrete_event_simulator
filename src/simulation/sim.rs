@@ -31,6 +31,14 @@ impl Simulation {
         return sim;
     }
 
+    fn terminal_event(&mut self) {
+        self.scheduler
+            .add_event(self.environment.terminating_event());
+        let last_event = self.scheduler.next_event().unwrap();
+        self.environment
+            .apply_event(&mut self.scheduler, &mut self.statistics, last_event);
+    }
+
     pub fn run(&mut self) {
         let mut event_count = 0;
         while let Some(event) = self.scheduler.next_event() {
@@ -38,6 +46,9 @@ impl Simulation {
                 .apply_event(&mut self.scheduler, &mut self.statistics, event);
             event_count += 1;
         }
+        // Apply the terminating event
+        self.terminal_event();
+
         let data_point = DataPoint::new(
             self.scheduler.current_time,
             event_count as f64,
@@ -66,6 +77,9 @@ impl Simulation {
 
             thread::sleep(Duration::from_millis(delay_millis));
         }
+        // Apply the terminating event
+        self.terminal_event();
+
         // Display statistics:
         self.statistics
             .all_series

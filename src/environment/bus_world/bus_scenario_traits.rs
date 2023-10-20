@@ -32,4 +32,11 @@ pub trait NewVehicleHandler {
         stat_recorder: &mut Stats,
         event: Box<dyn Event>,
     );
+
+    fn import_buses(
+        &mut self,
+        scheduler: &mut Scheduler,
+        stat_recorder: &mut Stats,
+        event: Box<dyn Event>,
+    );
 }

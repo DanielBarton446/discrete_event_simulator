@@ -9,6 +9,7 @@ pub struct NewBusesJson {
     pub number_of_buses: usize,
     pub capacity: usize,
 }
+
 impl NewBusesJson {
     pub fn new(number_of_buses: usize, capacity: usize) -> Self {
         Self {
