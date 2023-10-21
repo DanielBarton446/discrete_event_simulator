@@ -1,9 +1,13 @@
+//! Used to record a series of [DataPoint]s for a given statistic.
+
 use super::data_point::DataPoint;
 use std::{
     collections::BTreeMap,
     fmt::{self, Display, Formatter},
 };
 
+/// Contains a label for the series description,
+/// the unit of measurement, and a series of [DataPoint]s.
 #[derive(Clone)]
 pub struct TimeSeries {
     pub statistic_label: String,
@@ -12,6 +16,17 @@ pub struct TimeSeries {
 }
 
 impl TimeSeries {
+    /// Create a new TimeSeries. Assumes the unit is "Unknown" until a [DataPoint] is added.
+    ///
+    /// ```
+    /// use discrete_event_simulator::statistics::timeseries::TimeSeries;
+    ///
+    /// let time_series = TimeSeries::new("test".to_string());
+    ///
+    /// assert_eq!(time_series.statistic_label, "test");
+    /// assert_eq!(time_series.series.len(), 0);
+    /// assert_eq!(time_series.unit, "Unknown");
+    /// ```
     pub fn new(statistic_label: String) -> TimeSeries {
         TimeSeries {
             statistic_label,
@@ -20,14 +35,49 @@ impl TimeSeries {
         }
     }
 
+    /// Add a [DataPoint] to the series. Updates this series' unit if it is the first data point
+    /// added to the series.
+    /// ```
+    /// use discrete_event_simulator::statistics::data_point::DataPoint;
+    /// use discrete_event_simulator::statistics::timeseries::TimeSeries;
+    ///
+    /// let mut time_series = TimeSeries::new("test".to_string());
+    /// // unit is not known, as the timeseries has no data points
+    /// assert_eq!(time_series.unit, "Unknown");
+    ///
+    /// let data_point = DataPoint::new(0, 1.0, String::from("fake_unit"));
+    /// time_series.add_data_point(&data_point);
+    ///
+    /// assert_eq!(time_series.series.len(), 1);
+    /// assert_eq!(time_series.series.get(&0), Some(&1.0));
+    /// // unit is now known, as the timeseries has a data point
+    /// assert_eq!(time_series.unit, "fake_unit");
+    /// ```
     pub fn add_data_point(&mut self, data_point: &DataPoint) {
         if self.unit == "Unknown" {
-            self.unit = data_point.unit.clone();
+            self.unit = data_point.get_unit().to_string();
         }
-        self.series.insert(data_point.timestamp, data_point.value);
+        self.series
+            .insert(data_point.get_timestamp(), data_point.get_value());
     }
 
-    pub(crate) fn get_last_value(&self) -> f64 {
+    /// Get the last value in the series. Useful in scenarios
+    /// like a simulation where you are recording values at each timestep,
+    /// but you strictly need the final result.
+    ///
+    /// ```
+    /// use discrete_event_simulator::statistics::data_point::DataPoint;
+    /// use discrete_event_simulator::statistics::timeseries::TimeSeries;
+    ///
+    /// let mut time_series = TimeSeries::new("test".to_string());
+    /// let data_point = DataPoint::new(0, 1.0, String::from("fake_unit"));
+    /// let data_point_new = DataPoint::new(20, 2.0, String::from("fake_unit"));
+    /// time_series.add_data_point(&data_point);
+    /// time_series.add_data_point(&data_point_new);
+    ///
+    /// assert_eq!(time_series.get_last_value(), 2.0);
+    /// ```
+    pub fn get_last_value(&self) -> f64 {
         match self.series.iter().last() {
             Some((_, value)) => *value,
             None => panic!("No data points in series"),
@@ -36,6 +86,16 @@ impl TimeSeries {
 }
 
 impl Display for TimeSeries {
+    /// Display the series in a human-readable format for timestamps under 9 digits.
+    /// ```
+    /// use discrete_event_simulator::statistics::data_point::DataPoint;
+    /// use discrete_event_simulator::statistics::timeseries::TimeSeries;
+    ///
+    /// let mut time_series = TimeSeries::new("test".to_string());
+    /// let data_point = DataPoint::new(0, 1.1, String::from("fake_unit"));
+    /// time_series.add_data_point(&data_point);
+    /// println!("{}", time_series);
+    /// ```
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut output = String::new();
         for _ in self.statistic_label.chars() {

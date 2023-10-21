@@ -3,7 +3,7 @@ pub mod statistics {
     //! timeseries metrics and events.
     pub mod data_point;
     pub mod stats;
-    mod timeseries;
+    pub mod timeseries;
 }
 
 pub mod event {
