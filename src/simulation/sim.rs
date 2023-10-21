@@ -4,9 +4,9 @@ use std::{io, thread};
 
 use crossterm::{cursor, execute, terminal};
 
-use crate::des::des::Scheduler;
+use crate::des::scheduler::Scheduler;
 use crate::environment::environment::Environment;
-use crate::event::event::Event;
+use crate::event::schedulable::SchedulableEvent;
 use crate::statistics::data_point::DataPoint;
 use crate::statistics::stats::Stats;
 
@@ -20,7 +20,7 @@ impl Simulation {
     pub fn new(
         runtime: usize,
         environment: Box<dyn Environment>,
-        initial_event: Box<dyn Event>,
+        initial_event: Box<dyn SchedulableEvent>,
     ) -> Self {
         let mut sim = Simulation {
             scheduler: Scheduler::new(runtime),
@@ -90,7 +90,7 @@ impl Simulation {
         }
     }
 
-    pub fn add_arbitrary_event(&mut self, from: Box<dyn Event>) {
+    pub fn add_arbitrary_event(&mut self, from: Box<dyn SchedulableEvent>) {
         self.scheduler.add_event(from);
     }
 }

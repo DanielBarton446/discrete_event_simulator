@@ -2,7 +2,7 @@ use std::fmt::{Display, Error, Formatter};
 
 use serde::{Deserialize, Serialize};
 
-use crate::event::event::Event;
+use crate::event::schedulable::SchedulableEvent;
 
 #[derive(Deserialize, Serialize)]
 pub struct NewBusesJson {
@@ -35,7 +35,7 @@ impl NewBusEvent {
     }
 }
 
-impl Event for NewBusEvent {
+impl SchedulableEvent for NewBusEvent {
     fn get_event_type(&self) -> &str {
         "NewBus"
     }
@@ -66,7 +66,7 @@ impl Display for NewBusEvent {
 #[cfg(test)]
 mod tests {
     use crate::environment::bus_world::bus_world_events::new_bus::NewBusEvent;
-    use crate::event::event::Event;
+    use crate::event::schedulable::SchedulableEvent;
 
     #[test]
     fn create_bus_event() {

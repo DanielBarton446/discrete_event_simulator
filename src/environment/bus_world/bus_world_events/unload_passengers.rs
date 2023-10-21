@@ -2,7 +2,7 @@ use std::fmt::{Display, Error, Formatter};
 
 use serde::{Deserialize, Serialize};
 
-use crate::event::event::Event;
+use crate::event::schedulable::SchedulableEvent;
 
 pub struct UnloadPassengersEvent {
     uid: usize,
@@ -31,7 +31,7 @@ impl UnloadPassengersEvent {
     }
 }
 
-impl Event for UnloadPassengersEvent {
+impl SchedulableEvent for UnloadPassengersEvent {
     fn get_event_type(&self) -> &str {
         "UnloadPassengers"
     }

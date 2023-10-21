@@ -1,7 +1,7 @@
 use std::fmt::{Display, Error, Formatter};
 use std::str::FromStr;
 
-use crate::des::des::Scheduler;
+use crate::des::scheduler::Scheduler;
 use crate::environment::bus_world::bus::Bus;
 use crate::environment::bus_world::bus_scenario_traits::{
     AdvanceVehicleHandler, NewVehicleHandler, PassengerTransportHandler,
@@ -10,7 +10,7 @@ use crate::environment::bus_world::bus_stop::BusStop;
 use crate::environment::bus_world::bus_world_events::new_bus::NewBusesJson;
 use crate::environment::bus_world::bus_world_events::{load_passengers::*, move_bus_to_stop::*};
 use crate::environment::environment::Environment;
-use crate::event::event::Event;
+use crate::event::schedulable::SchedulableEvent;
 use crate::statistics::data_point::DataPoint;
 use crate::statistics::stats::Stats;
 
@@ -263,7 +263,7 @@ impl BusEnvironment {
         );
     }
 
-    fn terminate_bus_sim(&mut self, stat_recorder: &mut Stats, event: Box<dyn Event>) {
+    fn terminate_bus_sim(&mut self, stat_recorder: &mut Stats, event: Box<dyn SchedulableEvent>) {
         let timestamp = event.get_time_stamp();
         for stop in &mut self.bus_stops {
             for bus in &mut stop.buses_at_stop {
@@ -290,7 +290,7 @@ impl Environment for BusEnvironment {
         &mut self,
         scheduler: &mut Scheduler,
         stat_recorder: &mut Stats,
-        event: Box<dyn Event>,
+        event: Box<dyn SchedulableEvent>,
     ) {
         match BusEventTypes::from_str(event.get_event_type()) {
             Ok(BusEventTypes::TerminalEvent) => {
@@ -323,7 +323,7 @@ impl Environment for BusEnvironment {
         String::new()
     }
 
-    fn terminating_event(&self, scheduler: &mut Scheduler) -> Box<dyn Event> {
+    fn terminating_event(&self, scheduler: &mut Scheduler) -> Box<dyn SchedulableEvent> {
         Box::new(TerminalEvent::new(
             usize::MAX,
             scheduler.runtime,
@@ -337,7 +337,7 @@ impl PassengerTransportHandler for BusEnvironment {
         &mut self,
         scheduler: &mut Scheduler,
         stat_recorder: &mut Stats,
-        event: Box<dyn Event>,
+        event: Box<dyn SchedulableEvent>,
     ) {
         let bus_uuid = serde_json::from_str::<LoadPassengersJson>(&event.get_data().unwrap())
             .expect("Error: Could not deserialize bus mapping")
@@ -390,7 +390,7 @@ impl PassengerTransportHandler for BusEnvironment {
         &mut self,
         scheduler: &mut Scheduler,
         stat_recorder: &mut Stats,
-        event: Box<dyn Event>,
+        event: Box<dyn SchedulableEvent>,
     ) {
         let bus_uuid = serde_json::from_str::<LoadPassengersJson>(&event.get_data().unwrap())
             .expect("Error: Could not deserialize bus mapping")
@@ -449,7 +449,7 @@ impl AdvanceVehicleHandler for BusEnvironment {
         &mut self,
         scheduler: &mut Scheduler,
         stat_recorder: &mut Stats,
-        event: Box<dyn Event>,
+        event: Box<dyn SchedulableEvent>,
     ) {
         // // This should be handled and not unwrapped, but whatever
         let bus_and_new_stop =
@@ -496,7 +496,7 @@ impl NewVehicleHandler for BusEnvironment {
         &mut self,
         scheduler: &mut Scheduler,
         _stat_recorder: &mut Stats,
-        event: Box<dyn Event>,
+        event: Box<dyn SchedulableEvent>,
     ) {
         let bus_mapping = serde_json::from_str::<NewBusesJson>(&event.get_data().unwrap())
             .expect("Error: Could not deserialize bus mapping");
@@ -535,7 +535,7 @@ impl NewVehicleHandler for BusEnvironment {
         &mut self,
         scheduler: &mut Scheduler,
         _stat_recorder: &mut Stats,
-        event: Box<dyn Event>,
+        event: Box<dyn SchedulableEvent>,
     ) {
         let imported_buses = serde_json::from_str::<ImportBusesJson>(&event.get_data().unwrap())
             .expect("Error: Could not deserialize imported buses");
@@ -592,7 +592,7 @@ impl Display for BusEnvironment {
 #[cfg(test)]
 mod tests {
     use super::BusEnvironment;
-    use crate::des::des::Scheduler;
+    use crate::des::scheduler::Scheduler;
     use crate::environment::bus_world::bus_environment::BusEnvironmentSettings;
     use crate::environment::bus_world::bus_world_events::new_bus::NewBusesJson;
     use crate::{

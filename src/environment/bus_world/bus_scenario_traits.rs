@@ -1,18 +1,18 @@
-use crate::{des::des::Scheduler, event::event::Event, statistics::stats::Stats};
+use crate::{des::scheduler::Scheduler, event::schedulable::SchedulableEvent, statistics::stats::Stats};
 
 pub trait PassengerTransportHandler {
     fn load_passengers(
         &mut self,
         _scheduler: &mut Scheduler,
         stat_recorder: &mut Stats,
-        event: Box<dyn Event>,
+        event: Box<dyn SchedulableEvent>,
     );
 
     fn unload_passengers(
         &mut self,
         _scheduler: &mut Scheduler,
         stat_recorder: &mut Stats,
-        event: Box<dyn Event>,
+        event: Box<dyn SchedulableEvent>,
     );
 }
 
@@ -21,7 +21,7 @@ pub trait AdvanceVehicleHandler {
         &mut self,
         scheduler: &mut Scheduler,
         stat_recorder: &mut Stats,
-        event: Box<dyn Event>,
+        event: Box<dyn SchedulableEvent>,
     );
 }
 
@@ -30,13 +30,13 @@ pub trait NewVehicleHandler {
         &mut self,
         scheduler: &mut Scheduler,
         stat_recorder: &mut Stats,
-        event: Box<dyn Event>,
+        event: Box<dyn SchedulableEvent>,
     );
 
     fn import_buses(
         &mut self,
         scheduler: &mut Scheduler,
         stat_recorder: &mut Stats,
-        event: Box<dyn Event>,
+        event: Box<dyn SchedulableEvent>,
     );
 }

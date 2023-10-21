@@ -1,6 +1,6 @@
 use std::fmt::{Display, Error, Formatter};
 
-use crate::event::event::Event;
+use crate::event::schedulable::SchedulableEvent;
 
 pub struct TerminalEvent {
     uid: usize,
@@ -18,7 +18,7 @@ impl TerminalEvent {
     }
 }
 
-impl Event for TerminalEvent {
+impl SchedulableEvent for TerminalEvent {
     fn get_event_type(&self) -> &str {
         "Terminal"
     }

@@ -1,17 +1,21 @@
 pub mod statistics {
+    //! Statistics module used to record custom
+    //! timeseries metrics and events.
     pub mod data_point;
     pub mod stats;
     mod timeseries;
 }
 
 pub mod event {
-    pub mod event;
+    //! Event module used to define a generic event that
+    //! can be utilized by the scheduler in the module: [des]
+    pub mod schedulable;
 }
 
-mod des {
-    pub mod des;
+pub mod des {
+    //! Discrete event simulation module.
+    pub mod scheduler;
 }
-
 pub mod simulation {
     pub mod sim;
 }
@@ -36,13 +40,12 @@ pub mod environment {
     pub mod environment;
 }
 
-/// Genetic learning module
-/// Contains the genetic learning algorithm
-/// and the traits that are needed to implement
-/// genetic learning for generic populations.
 pub mod genetic_learning {
+    //! Genetic learning module.
+    //! Contains the genetic learning algorithm
+    //! and the traits that are needed to implement
+    //! genetic learning for generic populations.
+
     pub mod charting;
-    /// Defines traits for generic evolution:
-    /// - TODO: add a description of how this generally is used
     pub mod evolution;
 }

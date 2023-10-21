@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use crate::event::event::Event;
+use crate::event::schedulable::SchedulableEvent;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
@@ -34,7 +34,7 @@ impl MoveBusToStopEvent {
     }
 }
 
-impl Event for MoveBusToStopEvent {
+impl SchedulableEvent for MoveBusToStopEvent {
     fn get_event_type(&self) -> &str {
         "MoveBusToStop"
     }
