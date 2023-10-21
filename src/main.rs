@@ -51,8 +51,8 @@ fn print_top_info(
     n: usize,
     scores: &[(f64, f64)],
     configurations: &[Vec<Bus>],
-    environments: Vec<Box<dyn Environment>>,
-    stats: Vec<Stats>,
+    environments: &Vec<Box<dyn Environment>>,
+    stats: &Vec<Stats>,
 ) {
     let mut top_pairs = Vec::<(f64, usize)>::new();
     for (i, score) in scores.iter().enumerate() {
@@ -112,8 +112,8 @@ fn chart_evolutions(settings: EvolveBusSimSettings) {
         1,
         &evolution_scores,
         &configurations,
-        environments,
-        statistics_all,
+        &environments,
+        &statistics_all,
     );
 
     match draw_data(
