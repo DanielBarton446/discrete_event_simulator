@@ -121,7 +121,7 @@ fn chart_evolutions(settings: EvolveBusSimSettings) {
     );
 
     match draw_data(
-        format!("{}_Evolutions.png", settings.num_evolutions),
+        format!("{}_Evolutions", settings.num_evolutions),
         evolution_scores,
         (1920, 1080),
     ) {

@@ -1,12 +1,24 @@
+//! Simply a helper module for charting data.
+
 use plotters::prelude::*;
 
+/// Draws a line chart of the given data in ./target/tmp as a png.
+/// Chart is scaled with the minimum and maximum values of the data
+/// and so it may look a little odd.
+/// # Arguments
+/// * `chart_name` - The name of the chart to be saved.
+/// * `data` - the (x,y) data to be plotted.
+/// * `dimensions` - the physical dimensions of the chart. (width, height)
+/// ```
+///
+/// ```
 pub fn draw_data(
     chart_name: String,
     data: Vec<(f64, f64)>,
     dimensions: (u32, u32),
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Create a drawing area
-    let path = "target/tmp/".to_owned() + &chart_name;
+    let path = "target/tmp/".to_owned() + &chart_name + ".png";
     let root = BitMapBackend::new(&path, dimensions).into_drawing_area();
     root.fill(&WHITE)?;
 

@@ -1,7 +1,9 @@
-use std::{fmt::Display, ops::Index};
+//! This module is used to allow generic evolution of any given population.
 
 use rand::{seq::SliceRandom, thread_rng, Rng};
+use std::{fmt::Display, ops::Index};
 
+/// # Dna
 /// Defines the genetic makeup of an individual
 /// Note: DNA can be represented in many ways, and so its represented
 /// through json.
@@ -15,6 +17,7 @@ pub trait Dna {
     fn get_species(&self) -> &'static str;
 }
 
+/// # Fitness
 /// Defines how an individual can be evaluated among its peers.
 pub trait Fitness<F> {
     /// Evaluate the fitness of an individual
@@ -23,6 +26,7 @@ pub trait Fitness<F> {
     fn evaluate_fitness(&self) -> f32;
 }
 
+/// # Breedable
 /// Defines how an individual can reproduce
 /// and mutate. Note: reproduce uses self and a second individual to
 /// create a new individual.
@@ -34,8 +38,9 @@ where
     fn mutate(&mut self);
 }
 
-/// Population is a collection of individuals who can reproduce.
-/// This is the main struct that is used to evolve a population.
+/// # Population
+/// [Population] is a collection of any type of 'individuals' who are [Breedable],
+/// have [Fitness], and have [Dna].
 #[derive(Debug)]
 pub struct Population<T>
 where
