@@ -2,17 +2,13 @@ use discrete_event_simulator::{
     environment::{
         bus_world::{
             bus::Bus,
-            bus_environment::{BusEnvironment, BusEnvironmentSettings},
-            bus_world_events::{
-                import_bus::{ImportBusEvent, ImportBusesJson},
-                new_bus::{NewBusEvent, NewBusesJson},
-            },
+            bus_environment::BusEnvironmentSettings,
             utils::{
                 add_bus_stops_from_env_to_buses, create_bus_env, create_n_buses_m_capacity,
                 evolve_buses_n_times, get_wait_time, new_sim,
             },
         },
-        environment::Environment,
+        env::Environment,
     },
     genetic_learning::charting::draw_data,
     statistics::stats::Stats,
@@ -64,20 +60,20 @@ fn print_top_info(
     }
     top_pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
     for i in 0..n {
-        println!("Top {} evolution:", i + 1);
-        println!("{}\n", top_pairs[i].1);
-        println!("Top {} score:", i + 1);
-        println!("{}\n", top_pairs[i].0);
+        let index = top_pairs[i].1;
+        let val = top_pairs[i].0;
+        println!("Top {} number of evolutions:", i + 1);
+        println!("{}\n", index);
+        println!("Top {} score(total waiting time):", i + 1);
+        println!("{}\n", val);
         println!("Top {} configuration:", i + 1);
-        for bus in &configurations[top_pairs[i].1] {
+        for bus in &configurations[index] {
             println!("{:?}", bus);
         }
         println!();
         println!("Top {} environment:", i + 1,);
-        println!("{}", environments[top_pairs[i].1]);
-        for series in stats[top_pairs[i].1].all_series.iter() {
-            println!("{}", series);
-        }
+        println!("{}", environments[index]);
+        println!("{}", stats[index]);
     }
 }
 
@@ -133,6 +129,4 @@ fn chart_evolutions(settings: EvolveBusSimSettings) {
 fn main() {
     let settings = EvolveBusSimSettings::default();
     chart_evolutions(settings);
-
-    // manual_sim();
 }

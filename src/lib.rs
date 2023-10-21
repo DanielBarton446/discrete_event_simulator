@@ -8,7 +8,7 @@ pub mod statistics {
 
 pub mod event {
     //! Event module used to define a generic event that
-    //! can be utilized by the scheduler in the module: [des]
+    //! can be utilized by the scheduler in the des module.
     pub mod schedulable;
 }
 
@@ -17,11 +17,17 @@ pub mod des {
     pub mod scheduler;
 }
 pub mod simulation {
+    //! Simulation module used to define a generic simulation
+    //! for any environment.
     pub mod sim;
 }
 
 pub mod environment {
+    //! Environment module used to define a generic environment
+    //! that can be used by the simulation module.
     pub mod bus_world {
+        //! Bus world environment module. This is an example environment
+        //! that can be used to simulate a bus world.
         pub mod bus;
         pub mod bus_environment;
         pub mod bus_scenario_traits;
@@ -37,7 +43,7 @@ pub mod environment {
             pub mod unload_passengers;
         }
     }
-    pub mod environment;
+    pub mod env;
 }
 
 pub mod genetic_learning {
@@ -45,7 +51,6 @@ pub mod genetic_learning {
     //! Contains the genetic learning algorithm
     //! and the traits that are needed to implement
     //! genetic learning for generic populations.
-
     pub mod charting;
     pub mod evolution;
 }

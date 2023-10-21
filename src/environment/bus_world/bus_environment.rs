@@ -9,7 +9,7 @@ use crate::environment::bus_world::bus_scenario_traits::{
 use crate::environment::bus_world::bus_stop::BusStop;
 use crate::environment::bus_world::bus_world_events::new_bus::NewBusesJson;
 use crate::environment::bus_world::bus_world_events::{load_passengers::*, move_bus_to_stop::*};
-use crate::environment::environment::Environment;
+use crate::environment::env::Environment;
 use crate::event::schedulable::SchedulableEvent;
 use crate::statistics::data_point::DataPoint;
 use crate::statistics::stats::Stats;
@@ -86,7 +86,7 @@ impl Default for BusEnvironmentSettings {
     /// Default Settings are:
     /// * `pickup_delay`: 60,
     /// * `drop_off_delay`: 30,
-    /// * `next_stop_delay`: 1200,
+    /// * `next_stop_delay`: 600,
     /// * `initial_delay`: 600,
     fn default() -> Self {
         BusEnvironmentSettings {
@@ -597,7 +597,7 @@ mod tests {
     use crate::environment::bus_world::bus_world_events::new_bus::NewBusesJson;
     use crate::{
         environment::bus_world::bus_world_events::new_bus::NewBusEvent,
-        environment::environment::Environment, statistics::stats::Stats,
+        environment::env::Environment, statistics::stats::Stats,
     };
 
     #[test]

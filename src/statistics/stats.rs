@@ -114,6 +114,15 @@ impl Default for Stats {
     }
 }
 
+impl std::fmt::Display for Stats {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for series in self.all_series.iter() {
+            writeln!(f, "{}", series)?;
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{DataPoint, Stats};

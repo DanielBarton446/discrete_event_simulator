@@ -26,33 +26,27 @@ impl Simulation {
     /// The initial event is used to kick off the simulation. Note: it's important that
     /// events are self-scheduling, otherwise the simulation will stop after the initial event.
     ///
-    /// Example: using the bus_world environment, lets create and run a simulation. Also lets get
-    /// some statistics from the simulation, as well as the before and after of the environment.
     /// ```
-    /// use discrete_event_simulator::environment::bus_world::bus_environment::*;
-    /// use discrete_event_simulator::environment::bus_world::bus_world_events::new_bus::*;
     /// use discrete_event_simulator::simulation::sim::Simulation;
-
+    /// use discrete_event_simulator::environment::bus_world::bus_environment::*;
+    /// use discrete_event_simulator::environment::bus_world::bus_world_events::*;
+    /// use discrete_event_simulator::environment::bus_world::bus_world_events::new_bus::*;
+    ///
     /// let number_of_buses = NewBusesJson::new(10, 15);
     /// let initial_event = Box::new(NewBusEvent::new(
-    ///     1,
-    ///     0,
-    ///     serde_json::to_string(&number_of_buses).unwrap(),
-    /// ));
+    ///    1,
+    ///    0,
+    ///    serde_json::to_string(&number_of_buses).unwrap(),
+    ///    ));
     /// let settings = BusEnvironmentSettings::default();
     /// let mut env = BusEnvironment::new(settings);
     /// // Env specific initialization
     /// env.create_bus_stops(3);
-    /// env.initialize_bus_stops_with_passengers(100);
-
+    ///
     /// // create and run our simulation
-    /// let mut simulation = Simulation::new(14400, Box::new(env), initial_event);
-    /// // print out what the initial state of the environment looks like
-    /// println!("Initial State\n{}", simulation.environment);
+    /// let mut simulation = Simulation::new(100, Box::new(env), initial_event);
     /// simulation.run();
-    /// // print out what the final state of then environment looks like
-    /// println!("Final State\n{}", simulation.environment);
-
+    ///
     /// // print out statistics
     /// println!("{}", simulation.statistics);
     /// ```
